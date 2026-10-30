@@ -17,13 +17,15 @@ The project is being developed as a training MVP, with an initial focus on model
 
 | Technology | Purpose |
 |---|---|
-| Python | Backend programming language |
-| FastAPI | REST API framework |
-| Pydantic | Request and response validation |
-| AI Model APIs | Generate model responses and evaluate them |
-| pytest | Automated testing |
-| PostgreSQL (optional for the initial MVP) | Persist comparison history |
-| SQLAlchemy (if PostgreSQL is implemented) | Database interaction |
+| Python 3.12 | Backend programming language |
+| Django 5.2 | Web framework, ORM, admin |
+| Django REST Framework | REST API layer, serializers, and request/response validation |
+| drf-spectacular | OpenAPI schema and Swagger / ReDoc documentation |
+| django-environ | Settings loaded from environment variables (`.env`) |
+| django-cors-headers | CORS for the React frontend |
+| httpx | Async HTTP client for calling AI provider APIs |
+| PostgreSQL (psycopg 3) | Database |
+| pytest + pytest-django | Automated testing |
 
 The exact AI providers and models will be selected after testing their free-tier availability, rate limits, and API capabilities.
 
@@ -31,41 +33,48 @@ The exact AI providers and models will be selected after testing their free-tier
 
 ```text
 backend/
-├── app/
-│   ├── main.py
-│   ├── api/
-│   │   └── comparisons.py
-│   ├── services/
-│   │   ├── model_service.py
-│   │   ├── judge_service.py
-│   │   └── metrics_service.py
-│   ├── providers/
-│   │   ├── base.py
-│   │   ├── provider_a.py
-│   │   └── provider_b.py
-│   ├── schemas/
-│   │   └── comparison.py
-│   └── database/
-│       ├── models.py
-│       └── session.py
-├── tests/
+├── config/                     # Django project configuration
+│   ├── settings/
+│   │   ├── base.py             # Shared settings
+│   │   ├── development.py
+│   │   └── production.py
+│   ├── urls.py                 # Root URLs (/api/, /admin/, API docs)
+│   ├── asgi.py
+│   └── wsgi.py
+├── apps/
+│   ├── ai_models/              # Supported AI models, pricing, cost calculation
+│   │   └── services/
+│   │       └── pricing_service.py
+│   ├── comparisons/            # Runs the workflow; stores experiments and responses
+│   │   └── services/
+│   │       ├── comparison_service.py
+│   │       └── metrics_service.py
+│   └── evaluations/            # AI judge: rubric, evaluation, output validation
+│       └── services/
+│           └── judge_service.py
+├── providers/                  # Provider-specific AI API integrations
+│   ├── base.py
+│   └── exceptions.py
+├── tests/                      # Cross-app / integration tests
+├── manage.py
+├── pytest.ini
 ├── requirements.txt
-└── .env
+└── .env.example
 ```
 
 ### Directory Responsibilities
 
-- **`main.py`** — Creates the FastAPI application and registers the API routes.
-- **`api/`** — Defines HTTP endpoints and handles incoming requests.
-- **`services/model_service.py`** — Coordinates calls to the selected AI models.
-- **`services/judge_service.py`** — Sends model responses to the Judge Model and processes its evaluation.
-- **`services/metrics_service.py`** — Collects and normalizes latency, token usage, and other available metrics.
-- **`providers/`** — Contains provider-specific API integrations. Each provider translates the common interface into the provider's API format.
-- **`schemas/`** — Defines validated request and response structures using Pydantic.
-- **`database/`** — Contains database models and connection/session management if persistence is enabled.
-- **`tests/`** — Contains automated tests for services, API endpoints, and error handling.
-- **`requirements.txt`** — Lists Python dependencies.
-- **`.env`** — Stores local environment variables and API credentials.
+- **`config/`** — Django project configuration. Settings are split into `base`, `development`, and `production`.
+- **`apps/ai_models/`** — The catalog of supported AI models and their pricing.
+- **`apps/ai_models/services/pricing_service.py`** — Calculates estimated cost from token usage and model pricing.
+- **`apps/comparisons/`** — The comparison workflow: API endpoints, serializers, and persisted experiments and model responses.
+- **`apps/comparisons/services/comparison_service.py`** — Sends the same prompt to the selected models concurrently, collects metrics, and requests the judge evaluation.
+- **`apps/comparisons/services/metrics_service.py`** — Normalizes latency and token usage, and marks metrics as unavailable rather than reporting them as zero.
+- **`apps/evaluations/`** — The AI-as-a-Judge: evaluation rubric and stored evaluations.
+- **`apps/evaluations/services/judge_service.py`** — Sends responses to the judge model, mitigates bias, and validates its structured JSON output.
+- **`providers/`** — Provider-specific API integrations. Each provider implements the shared interface in `base.py`.
+- **`apps/<app>/tests/`** — Unit tests for each app. **`tests/`** holds cross-app tests.
+- **`.env.example`** — Template for local environment variables. Copy it to `.env`.
 
 ## 4. How the System Works
 
@@ -75,7 +84,7 @@ The intended comparison workflow is:
 2. The backend validates the request.
 3. The Model Service sends the same prompt to both models.
 4. The backend collects the responses and measures their execution times.
-5. The Judge Service evaluates both responses using predefined quality criteria.
+5. The Judge Service (`evaluations` app) evaluates both responses using predefined quality criteria.
 6. The Metrics Service collects available performance and token-usage information.
 7. The backend returns a structured comparison result to the frontend.
 8. The frontend displays both answers, evaluation results, and metrics so the user can decide which response is more suitable.
@@ -88,19 +97,17 @@ If one model fails, the backend should preserve the successful response whenever
 
 ### Prerequisites
 
-- Python 3.11 or a compatible version supported by the selected dependencies.
-- pip.
+- Python 3.12.
+- PostgreSQL.
 - API credentials for the selected AI providers.
 - Git.
 
 ### Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>/backend
+git clone git@github.com:GSG-Project/backend.git
+cd backend
 ```
-
-Replace the placeholders with your repository URL and folder name.
 
 ### Create a Virtual Environment
 
@@ -124,41 +131,37 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Configure Environment Variables
+### Create the Database
 
-Create a `.env` file in the backend directory.
-
-Example:
-
-```env
-APP_ENV=development
-
-PROVIDER_A_API_KEY=your_provider_a_api_key
-PROVIDER_B_API_KEY=your_provider_b_api_key
-
-# Optional: configure these when database persistence is implemented.
-DATABASE_URL=
+```bash
+createdb llm_sandbox
 ```
 
-Use the actual environment-variable names required by your implementation. The example names above are placeholders until the providers are finalized.
+### Configure Environment Variables
 
-**Security:** Never commit `.env` or real API keys to Git. Add `.env` and `.venv/` to `.gitignore`, and provide a `.env.example` file containing placeholders for teammates.
+```bash
+cp .env.example .env
+```
+
+Then set `SECRET_KEY`, `DATABASE_URL` (for example `postgres://user:password@localhost:5432/llm_sandbox`), and the provider API keys. The provider variable names are placeholders until the providers are finalized.
+
+**Security:** Never commit `.env` or real API keys to Git. Both `.env` and `.venv/` are listed in `.gitignore`.
 
 ## 6. Running the Application
 
-Once `app/main.py` contains the FastAPI application instance named `app`, start the development server with:
-
 ```bash
-uvicorn app.main:app --reload
+python manage.py migrate
+python manage.py runserver
 ```
 
 The local API will be available at:
 
-- API base URL: `http://127.0.0.1:8000`
-- Interactive Swagger documentation: `http://127.0.0.1:8000/docs`
-- Alternative API documentation: `http://127.0.0.1:8000/redoc`
+- API base URL: `http://127.0.0.1:8000/api/`
+- Swagger documentation: `http://127.0.0.1:8000/api/docs/`
+- ReDoc documentation: `http://127.0.0.1:8000/api/redoc/`
+- Django admin: `http://127.0.0.1:8000/admin/`
 
-These URLs become available after the application and routes are implemented.
+`manage.py` uses `config.settings.development` by default. `wsgi.py` and `asgi.py` use `config.settings.production`. To override either, set `DJANGO_SETTINGS_MODULE`.
 
 ## 7. API Overview
 
@@ -166,7 +169,7 @@ The main planned endpoint is:
 
 ### Compare Models
 
-`POST /api/comparisons`
+`POST /api/comparisons/`
 
 **Example request:**
 
@@ -257,8 +260,10 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 ## 10. Development Guidelines
 
 - Keep provider-specific code inside `providers/`.
-- Keep business logic inside `services/`.
-- Validate requests and responses using Pydantic schemas.
+- Keep business logic inside the app `services/` packages.
+- Validate requests and responses using DRF serializers.
+- Keep views thin; they validate input and delegate to services.
+- Keep app dependencies one-directional: `comparisons` may use `evaluations`, `ai_models`, and `providers`, never the reverse.
 - Never expose API keys or internal credentials in API responses or logs.
 - Handle provider errors consistently.
 - Keep the API contract synchronized with the frontend team.
