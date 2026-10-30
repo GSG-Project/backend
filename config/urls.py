@@ -5,6 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 api_patterns = [
     path('models/', include('apps.ai_models.urls')),
     path('comparisons/', include('apps.comparisons.urls')),
+    path('evaluations/', include('apps.evaluations.urls')),
 ]
 
 urlpatterns = [

@@ -1,1 +1,1 @@
-"""Normalizes latency and token usage, and calculates estimated cost from model pricing."""
+"""Normalizes latency and token usage, marking unavailable metrics rather than reporting zero."""

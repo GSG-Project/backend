@@ -41,6 +41,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'apps.ai_models',
     'apps.comparisons',
+    'apps.evaluations',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

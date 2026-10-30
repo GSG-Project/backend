@@ -42,12 +42,16 @@ backend/
 │   ├── asgi.py
 │   └── wsgi.py
 ├── apps/
-│   ├── ai_models/              # Supported AI models and their pricing
-│   └── comparisons/            # Experiments, model responses, judge evaluations
+│   ├── ai_models/              # Supported AI models, pricing, cost calculation
+│   │   └── services/
+│   │       └── pricing_service.py
+│   ├── comparisons/            # Runs the workflow; stores experiments and responses
+│   │   └── services/
+│   │       ├── comparison_service.py
+│   │       └── metrics_service.py
+│   └── evaluations/            # AI judge: rubric, evaluation, output validation
 │       └── services/
-│           ├── model_service.py
-│           ├── judge_service.py
-│           └── metrics_service.py
+│           └── judge_service.py
 ├── providers/                  # Provider-specific AI API integrations
 │   ├── base.py
 │   └── exceptions.py
@@ -61,11 +65,13 @@ backend/
 ### Directory Responsibilities
 
 - **`config/`** — Django project configuration. Settings are split into `base`, `development`, and `production`.
-- **`apps/ai_models/`** — The catalog of supported AI models and the pricing used for cost calculation.
-- **`apps/comparisons/`** — The comparison workflow: API endpoints, serializers, and persisted experiment results.
-- **`apps/comparisons/services/model_service.py`** — Sends the same prompt to the selected models concurrently.
-- **`apps/comparisons/services/judge_service.py`** — Sends model responses to the Judge Model and validates its structured JSON evaluation.
-- **`apps/comparisons/services/metrics_service.py`** — Normalizes latency and token usage and calculates estimated cost.
+- **`apps/ai_models/`** — The catalog of supported AI models and their pricing.
+- **`apps/ai_models/services/pricing_service.py`** — Calculates estimated cost from token usage and model pricing.
+- **`apps/comparisons/`** — The comparison workflow: API endpoints, serializers, and persisted experiments and model responses.
+- **`apps/comparisons/services/comparison_service.py`** — Sends the same prompt to the selected models concurrently, collects metrics, and requests the judge evaluation.
+- **`apps/comparisons/services/metrics_service.py`** — Normalizes latency and token usage, and marks metrics as unavailable rather than reporting them as zero.
+- **`apps/evaluations/`** — The AI-as-a-Judge: evaluation rubric and stored evaluations.
+- **`apps/evaluations/services/judge_service.py`** — Sends responses to the judge model, mitigates bias, and validates its structured JSON output.
 - **`providers/`** — Provider-specific API integrations. Each provider implements the shared interface in `base.py`.
 - **`apps/<app>/tests/`** — Unit tests for each app. **`tests/`** holds cross-app tests.
 - **`.env.example`** — Template for local environment variables. Copy it to `.env`.
@@ -78,7 +84,7 @@ The intended comparison workflow is:
 2. The backend validates the request.
 3. The Model Service sends the same prompt to both models.
 4. The backend collects the responses and measures their execution times.
-5. The Judge Service evaluates both responses using predefined quality criteria.
+5. The Judge Service (`evaluations` app) evaluates both responses using predefined quality criteria.
 6. The Metrics Service collects available performance and token-usage information.
 7. The backend returns a structured comparison result to the frontend.
 8. The frontend displays both answers, evaluation results, and metrics so the user can decide which response is more suitable.
@@ -257,6 +263,7 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 - Keep business logic inside the app `services/` packages.
 - Validate requests and responses using DRF serializers.
 - Keep views thin; they validate input and delegate to services.
+- Keep app dependencies one-directional: `comparisons` may use `evaluations`, `ai_models`, and `providers`, never the reverse.
 - Never expose API keys or internal credentials in API responses or logs.
 - Handle provider errors consistently.
 - Keep the API contract synchronized with the frontend team.
