@@ -24,3 +24,24 @@ GEMINI_MODELS = [
         "is_active": True,
     },
 ]
+
+
+def get_available_models() -> list[dict]:
+    """Return active models that can be selected by API consumers."""
+    return [
+        model
+        for model in GEMINI_MODELS
+        if model["is_active"]
+    ]
+
+
+def get_model_by_id(model_id: str) -> dict | None:
+    """Return an active model by its public identifier."""
+    return next(
+        (
+            model
+            for model in get_available_models()
+            if model["id"] == model_id
+        ),
+        None,
+    )
