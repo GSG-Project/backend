@@ -136,9 +136,9 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 # AI providers
 # Keys stay on the backend only; never expose them to the frontend.
 
-AI_PROVIDER_API_KEYS = {
-    'provider_a': env('PROVIDER_A_API_KEY', default=''),
-    'provider_b': env('PROVIDER_B_API_KEY', default=''),
-}
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 
-AI_REQUEST_TIMEOUT_SECONDS = env.int('AI_REQUEST_TIMEOUT_SECONDS', default=60)
+AI_REQUEST_TIMEOUT_SECONDS = env.int(
+    'AI_REQUEST_TIMEOUT_SECONDS',
+    default=60
+)
