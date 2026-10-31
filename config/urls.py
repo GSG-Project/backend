@@ -3,9 +3,9 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 api_patterns = [
-    path('api/models/', include('apps.ai_models.urls')),
-    path('api/comparisons/', include('apps.comparisons.urls')),
-    path('api/evaluations/', include('apps.evaluations.urls')),
+    path('models/', include('apps.ai_models.urls')),
+    path('comparisons/', include('apps.comparisons.urls')),
+    path('evaluations/', include('apps.evaluations.urls')),
 ]
 
 urlpatterns = [
