@@ -118,6 +118,14 @@ python -m venv .venv
 .venv\Scripts\activate
 ```
 
+In PowerShell, use the activation script with a process-scoped execution-policy
+bypass if scripts are disabled:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+. .\.venv\Scripts\Activate.ps1
+```
+
 **Linux/macOS:**
 
 ```bash

@@ -1,3 +1,8 @@
+import os
+
+os.environ.setdefault('SECRET_KEY', 'django-insecure-development-only')
+os.environ.setdefault('DATABASE_URL', 'sqlite:///db.sqlite3')
+
 from .base import *  # noqa: F401,F403
 
 DEBUG = True
