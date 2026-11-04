@@ -2,7 +2,7 @@ from django.db import models
 
 
 class AIModel(models.Model):
-    """A model in the catalog: selectable for comparisons and/or usable as the judge."""
+    """A model in the catalog: either one users can compare, or a judge."""
 
     class Provider(models.TextChoices):
         GEMINI = 'gemini', 'Gemini'
@@ -24,9 +24,11 @@ class AIModel(models.Model):
         max_digits=12, decimal_places=6, null=True, blank=True,
     )
     currency = models.CharField(max_length=3, default='USD')
-    # Inactive models are not offered for comparison, but stay in the database
+    # Inactive models are hidden from every list but stay in the database
     # because past experiments (and judge runs) refer to them.
     is_active = models.BooleanField(default=True)
+    # Judges evaluate responses and are not offered as models to compare.
+    is_judge = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['name']

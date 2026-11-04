@@ -17,20 +17,25 @@ class Command(BaseCommand):
                 is_active=entry['is_active'],
             )
 
-        # The judge is not offered for comparison, so it is stored as inactive.
         self._upsert(
             identifier=settings.JUDGE_MODEL,
             name=settings.JUDGE_MODEL,
             provider=AIModel.Provider.GROQ,
-            is_active=False,
+            is_active=True,
+            is_judge=True,
         )
 
-    def _upsert(self, identifier, name, provider, is_active):
+    def _upsert(self, identifier, name, provider, is_active, is_judge=False):
         # Values are only used when the row is created, so re-running the seed
         # never undoes changes made in the admin.
         _, created = AIModel.objects.update_or_create(
             api_model_identifier=identifier,
             defaults={},
-            create_defaults={'name': name, 'provider': provider, 'is_active': is_active},
+            create_defaults={
+                'name': name,
+                'provider': provider,
+                'is_active': is_active,
+                'is_judge': is_judge,
+            },
         )
         self.stdout.write(f"{'Created' if created else 'Kept existing'} {identifier}")

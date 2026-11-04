@@ -7,8 +7,8 @@ from .models import AIModel
 class AIModelAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'provider', 'api_model_identifier',
-        'input_price_per_million', 'output_price_per_million', 'currency', 'is_active',
+        'input_price_per_million', 'output_price_per_million', 'currency', 'is_active', 'is_judge',
     )
-    list_filter = ('provider', 'is_active')
+    list_filter = ('provider', 'is_active', 'is_judge')
     list_editable = ('is_active',)
     search_fields = ('name', 'api_model_identifier')

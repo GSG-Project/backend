@@ -35,12 +35,15 @@ def test_seed_models_is_idempotent_and_keeps_prices(settings):
     assert str(AIModel.objects.get(api_model_identifier='gemini-3.8-flash').input_price_per_million) == '0.300000'
 
 
-def test_seed_models_stores_judge_as_inactive(settings):
+def test_seed_models_marks_the_judge(settings):
     settings.JUDGE_MODEL = 'judge-model'
 
     call_command('seed_models')
 
-    assert AIModel.objects.get(api_model_identifier='judge-model').is_active is False
+    judge = AIModel.objects.get(api_model_identifier='judge-model')
+    assert judge.is_judge is True
+    assert judge.is_active is True
+    assert AIModel.objects.filter(is_judge=True).count() == 1
 
 
 def test_seed_models_does_not_undo_admin_changes(settings):
