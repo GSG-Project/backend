@@ -271,7 +271,7 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 - Keep business logic inside the app `services/` packages.
 - Validate requests and responses using DRF serializers.
 - Keep views thin; they validate input and delegate to services.
-- Keep app dependencies one-directional: `comparisons` may use `evaluations`, `ai_models`, and `providers`, never the reverse.
+- Keep code dependencies one-directional: `comparisons` may import from `evaluations`, `ai_models`, and `providers`, never the reverse. Database links may point the other way (`Evaluation` references `comparisons.ModelResponse`); use a string reference such as `'comparisons.ModelResponse'` there, not an import.
 - Never expose API keys or internal credentials in API responses or logs.
 - Handle provider errors consistently.
 - Keep the API contract synchronized with the frontend team.
