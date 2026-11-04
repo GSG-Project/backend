@@ -57,6 +57,10 @@ class FakeJudge:
                 for index, answer in enumerate(answers)
             ],
             'judge_model': 'judge-model',
+            'latency_ms': 850.0,
+            'input_tokens': 500,
+            'output_tokens': 200,
+            'total_tokens': 700,
         }
 
 

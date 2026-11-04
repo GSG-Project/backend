@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 
 from apps.ai_models.models import AIModel
 from apps.comparisons.models import Experiment
+from apps.comparisons.serializers import ComparisonResponseSerializer
 from apps.comparisons.services.comparison_service import ComparisonService
 from apps.comparisons.tests.fakes import FakeJudge, FakeProvider
 
@@ -48,3 +49,11 @@ def test_invalid_requests_are_rejected_and_saved_nothing(data):
 
     assert response.status_code == 400
     assert Experiment.objects.count() == 0
+
+
+def test_the_real_response_matches_the_documented_schema():
+    body = post({'prompt': 'Explain REST.', 'model_ids': ['m-1', 'm-2']}).json()
+
+    serializer = ComparisonResponseSerializer(data=body)
+
+    assert serializer.is_valid(), serializer.errors

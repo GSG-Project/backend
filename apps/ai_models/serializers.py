@@ -11,3 +11,7 @@ class AIModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIModel
         fields = ['id', 'name', 'provider', 'is_active']
+
+
+class AIModelListSerializer(serializers.Serializer):
+    models = AIModelSerializer(many=True)
