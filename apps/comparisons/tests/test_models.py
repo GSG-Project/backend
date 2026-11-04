@@ -33,7 +33,9 @@ def test_response_keeps_unavailable_metrics_as_null(experiment):
     run = Run.objects.create(experiment=experiment)
     em = experiment.experiment_models.first()
 
-    response = ModelResponse.objects.create(run=run, experiment_model=em, response_text='ok', status='success')
+    response = ModelResponse.objects.create(
+        run=run, experiment_model=em, response_text='ok', status='success',
+    )
 
     assert response.input_tokens is None
     assert response.latency_ms is None

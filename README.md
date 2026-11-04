@@ -281,6 +281,8 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 
 ## 10. Development Guidelines
 
+- Lint with `ruff check .` (install with `pip install -r requirements-dev.txt`). The code added with the database tables passes; a few older files still have findings (import order, unused imports) to clean up separately.
+
 - Keep provider-specific code inside `providers/`.
 - Keep business logic inside the app `services/` packages.
 - Validate requests and responses using DRF serializers.

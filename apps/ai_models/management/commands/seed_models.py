@@ -6,7 +6,10 @@ from apps.ai_models.services.registry import GEMINI_MODELS
 
 
 class Command(BaseCommand):
-    help = 'Create the supported AI models that are missing. Existing rows (names, prices, active flag) are left untouched.'
+    help = (
+        'Create the supported AI models that are missing. '
+        'Existing rows (names, prices, active flag) are left untouched.'
+    )
 
     def handle(self, *args, **options):
         for entry in GEMINI_MODELS:

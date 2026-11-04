@@ -32,7 +32,8 @@ def test_seed_models_is_idempotent_and_keeps_prices(settings):
     call_command('seed_models')
 
     assert AIModel.objects.count() == count
-    assert str(AIModel.objects.get(api_model_identifier='gemini-3.8-flash').input_price_per_million) == '0.300000'
+    model = AIModel.objects.get(api_model_identifier='gemini-3.8-flash')
+    assert str(model.input_price_per_million) == '0.300000'
 
 
 def test_seed_models_marks_the_judge(settings):
