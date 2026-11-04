@@ -1,6 +1,6 @@
 from rest_framework import serializers  # noqa: F401
 
-from apps.ai_models.services.registry import get_model_by_id
+from apps.ai_models.services.catalog import get_selectable_model
 
 
 class ComparisonRequestSerializer(serializers.Serializer):
@@ -25,7 +25,7 @@ class ComparisonRequestSerializer(serializers.Serializer):
 
         # Make sure every selected model exists and is active.
         for model_id in model_ids:
-            if get_model_by_id(model_id) is None:
+            if get_selectable_model(model_id) is None:
                 raise serializers.ValidationError(
                     f"Model '{model_id}' is not available."
                 )
