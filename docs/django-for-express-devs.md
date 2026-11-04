@@ -107,19 +107,19 @@ python manage.py shell            # interactive console with the project loaded
 ### `apps/`: our features
 
 #### `apps/ai_models/`: supported models and pricing
-- Stores the list of AI models users can choose from (for example "gpt-x", "claude-y").
-- Stores each model's pricing (cost per input token and per output token).
+- Table `AIModel`: the models users can compare, plus the judge model (`is_judge`). Stores each model's price per 1M input and output tokens.
+- Load the starting data with `python manage.py seed_models`. Prices are not seeded; enter them in the admin.
 - `services/pricing_service.py` calculates the estimated cost of a request from its token counts.
 - Routes are mounted at `/api/models/`.
 
 #### `apps/comparisons/`: the main workflow
-- Stores experiments: the prompt, the selected models, and each model's response and metrics.
+- Tables `Experiment`, `ExperimentModel`, `Run`, `ModelResponse`: the prompt, the selected models, each execution, and each model's response and metrics.
 - `services/comparison_service.py` runs the whole flow: it sends the prompt to both models **at the same time**, collects the results, and asks the judge to evaluate them.
 - `services/metrics_service.py` handles latency and token counts. If a provider doesn't return token counts, it stores `null`, never `0`.
 - Routes are mounted at `/api/comparisons/`.
 
 #### `apps/evaluations/`: the AI judge
-- Stores the evaluation rubric and the judge's results.
+- Tables `EvaluationCriterion` and `Evaluation`: the rubric and the judge's score per response and criterion. Load the criteria with `python manage.py seed_criteria`.
 - `services/judge_service.py` sends both responses to the judge model, hides model names to reduce bias, and **validates** the JSON the judge returns before it is used.
 - Routes are mounted at `/api/evaluations/`.
 
@@ -168,16 +168,15 @@ request
 
 ## 5. Example: adding an endpoint
 
-Say we want `GET /api/models/` to return the list of supported models.
+Say we add a made-up `notes` app and want `GET /api/notes/` to return the active notes. (This is only an example of the pattern; the real tables are described in `database.md`.)
 
-**Step 1: Model** (`apps/ai_models/models.py`). This defines the table, like a Mongoose schema.
+**Step 1: Model** (`apps/notes/models.py`). This defines the table, like a Mongoose schema.
 ```python
 from django.db import models
 
-class AIModel(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    provider = models.CharField(max_length=50)
-    is_active = models.BooleanField(default=True)
+class Note(models.Model):
+    title = models.CharField(max_length=100)
+    is_archived = models.BooleanField(default=False)
 ```
 Then create and apply the migration:
 ```bash
@@ -185,43 +184,43 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-**Step 2: Serializer** (`apps/ai_models/serializers.py`). This defines the JSON shape and validation.
+**Step 2: Serializer** (`apps/notes/serializers.py`). This defines the JSON shape and validation.
 ```python
 from rest_framework import serializers
-from .models import AIModel
+from .models import Note
 
-class AIModelSerializer(serializers.ModelSerializer):
+class NoteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AIModel
-        fields = ['id', 'name', 'provider']
+        model = Note
+        fields = ['id', 'title']
 ```
 
-**Step 3: View** (`apps/ai_models/views.py`). This is the controller.
+**Step 3: View** (`apps/notes/views.py`). This is the controller.
 ```python
 from rest_framework.generics import ListAPIView
-from .models import AIModel
-from .serializers import AIModelSerializer
+from .models import Note
+from .serializers import NoteSerializer
 
-class AIModelListView(ListAPIView):
-    queryset = AIModel.objects.filter(is_active=True)
-    serializer_class = AIModelSerializer
+class NoteListView(ListAPIView):
+    queryset = Note.objects.filter(is_archived=False)
+    serializer_class = NoteSerializer
 ```
 
-**Step 4: Route** (`apps/ai_models/urls.py`)
+**Step 4: Route** (`apps/notes/urls.py`)
 ```python
 from django.urls import path
-from .views import AIModelListView
+from .views import NoteListView
 
 app_name = 'ai_models'
 
 urlpatterns = [
-    path('', AIModelListView.as_view(), name='list'),
+    path('', NoteListView.as_view(), name='list'),
 ]
 ```
 
-That's it. `config/urls.py` already mounts this app at `/api/models/`, and the endpoint appears automatically in Swagger at `/api/docs/`.
+That's it. After mounting the app's `urls.py` in `config/urls.py` (for example `path('notes/', include('apps.notes.urls'))`), the endpoint appears automatically in Swagger at `/api/docs/`.
 
-> The code above is only an example to show the pattern. The real models will be designed as part of the feature tasks.
+> The `notes` app does not exist in the project. Add apps with `python manage.py startapp <name> apps/<name>` and register them in `LOCAL_APPS` in `config/settings/base.py`.
 
 ---
 
@@ -235,6 +234,8 @@ pip install -r requirements.txt
 cp .env.example .env           # then fill in SECRET_KEY, DATABASE_URL, API keys
 createdb llm_sandbox           # create the PostgreSQL database (first time)
 python manage.py migrate
+python manage.py seed_models      # supported AI models and the judge
+python manage.py seed_criteria    # evaluation criteria
 python manage.py runserver
 ```
 
