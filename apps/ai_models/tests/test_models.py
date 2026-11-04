@@ -41,3 +41,15 @@ def test_seed_models_stores_judge_as_inactive(settings):
     call_command('seed_models')
 
     assert AIModel.objects.get(api_model_identifier='judge-model').is_active is False
+
+
+def test_seed_models_does_not_undo_admin_changes(settings):
+    settings.JUDGE_MODEL = 'judge-model'
+    call_command('seed_models')
+    AIModel.objects.filter(api_model_identifier='gemini-3.8-flash').update(is_active=False, name='Renamed')
+
+    call_command('seed_models')
+
+    model = AIModel.objects.get(api_model_identifier='gemini-3.8-flash')
+    assert model.is_active is False
+    assert model.name == 'Renamed'

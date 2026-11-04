@@ -6,7 +6,7 @@ from apps.ai_models.services.registry import GEMINI_MODELS
 
 
 class Command(BaseCommand):
-    help = 'Create or update the supported AI models. Safe to run repeatedly; prices are left untouched.'
+    help = 'Create the supported AI models that are missing. Existing rows (names, prices, active flag) are left untouched.'
 
     def handle(self, *args, **options):
         for entry in GEMINI_MODELS:
@@ -26,8 +26,11 @@ class Command(BaseCommand):
         )
 
     def _upsert(self, identifier, name, provider, is_active):
+        # Values are only used when the row is created, so re-running the seed
+        # never undoes changes made in the admin.
         _, created = AIModel.objects.update_or_create(
             api_model_identifier=identifier,
-            defaults={'name': name, 'provider': provider, 'is_active': is_active},
+            defaults={},
+            create_defaults={'name': name, 'provider': provider, 'is_active': is_active},
         )
-        self.stdout.write(f"{'Created' if created else 'Updated'} {identifier}")
+        self.stdout.write(f"{'Created' if created else 'Kept existing'} {identifier}")
