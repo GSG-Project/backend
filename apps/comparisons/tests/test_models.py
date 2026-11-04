@@ -129,3 +129,15 @@ def test_finished_run_requires_completed_at(experiment, status):
 
 def test_unfinished_run_may_have_no_completed_at(experiment):
     Run.objects.create(experiment=experiment, status='running')
+
+
+def test_winner_must_belong_to_the_same_experiment(experiment, models_pair):
+    other = Experiment.objects.create(prompt='Other prompt.')
+    other_em = ExperimentModel.objects.create(experiment=other, ai_model=models_pair[0])
+
+    with pytest.raises(ValidationError):
+        Run.objects.create(experiment=experiment, winner=other_em)
+
+
+def test_winner_from_the_same_experiment_is_allowed(experiment):
+    Run.objects.create(experiment=experiment, winner=experiment.experiment_models.first())

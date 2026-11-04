@@ -80,6 +80,15 @@ class Run(models.Model):
         max_length=20, choices=EvaluationStatus.choices, default=EvaluationStatus.PENDING,
     )
     evaluation_error = models.TextField(blank=True)
+    # The judge's pick and its explanation. Empty until a completed evaluation.
+    winner = models.ForeignKey(
+        ExperimentModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='won_runs',
+    )
+    judge_reasoning = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-started_at']
@@ -100,6 +109,16 @@ class Run(models.Model):
 
     def __str__(self):
         return f'Run {self.pk} of experiment {self.experiment_id}'
+
+    def clean(self):
+        # The winner must be one of this experiment's models. This spans two
+        # tables, so it is checked here; bulk operations skip it.
+        if self.winner_id is not None and self.winner.experiment_id != self.experiment_id:
+            raise ValidationError('The winner must be a model of the same experiment.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class ModelResponse(models.Model):
