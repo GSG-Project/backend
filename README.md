@@ -56,11 +56,19 @@ backend/
 │   ├── base.py
 │   └── exceptions.py
 ├── tests/                      # Cross-app / integration tests
+├── scripts/                    # Manual checks against the real provider APIs (not tests)
+├── docs/                       # ERD, database description, guide for Express developers
 ├── manage.py
 ├── pytest.ini
 ├── requirements.txt
 └── .env.example
 ```
+
+### Database
+
+PostgreSQL, with seven tables across the three apps: `AIModel` (`ai_models`); `Experiment`, `ExperimentModel`, `Run`, `ModelResponse` (`comparisons`); `EvaluationCriterion`, `Evaluation` (`evaluations`). See [`docs/database.md`](docs/database.md) for each table and its rules, and open `docs/erd.html` in a browser for the diagram.
+
+After changing a model, run `python manage.py makemigrations` and commit the migration file with the code.
 
 ### Directory Responsibilities
 
@@ -73,6 +81,8 @@ backend/
 - **`apps/evaluations/`** — The AI-as-a-Judge: evaluation rubric and stored evaluations.
 - **`apps/evaluations/services/judge_service.py`** — Sends responses to the judge model, mitigates bias, and validates its structured JSON output.
 - **`providers/`** — Provider-specific API integrations. Each provider implements the shared interface in `base.py`.
+- **`docs/`** — `database.md` (tables and rules), `erd.html` (diagram), and `django-for-express-devs.md`.
+- **`scripts/`** — Manual scripts that call the real Gemini/Groq APIs. Run from `backend/`, for example `python -m scripts.try_groq`. They are not part of `pytest`.
 - **`apps/<app>/tests/`** — Unit tests for each app. **`tests/`** holds cross-app tests.
 - **`.env.example`** — Template for local environment variables. Copy it to `.env`.
 
@@ -159,8 +169,12 @@ Then set `SECRET_KEY`, `DATABASE_URL` (for example `postgres://user:password@loc
 
 ```bash
 python manage.py migrate
+python manage.py seed_models      # supported AI models and the judge
+python manage.py seed_criteria    # evaluation criteria
 python manage.py runserver
 ```
+
+Prices are not seeded. Enter each model's price per 1M tokens in the admin; until then, cost is reported as unavailable.
 
 The local API will be available at:
 
