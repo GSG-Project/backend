@@ -17,6 +17,7 @@ class Experiment(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [models.Index(fields=['-created_at'])]
 
     def __str__(self):
         return f'Experiment {self.pk}'
@@ -73,6 +74,7 @@ class Run(models.Model):
         null=True,
         blank=True,
         related_name='judged_runs',
+        limit_choices_to={'is_judge': True},
     )
     evaluation_status = models.CharField(
         max_length=20, choices=EvaluationStatus.choices, default=EvaluationStatus.PENDING,
@@ -81,6 +83,20 @@ class Run(models.Model):
 
     class Meta:
         ordering = ['-started_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(evaluation_status='completed') | Q(judge_model__isnull=False),
+                name='completed_evaluation_has_judge',
+            ),
+            models.CheckConstraint(
+                condition=~Q(evaluation_status='failed') | ~Q(evaluation_error=''),
+                name='failed_evaluation_has_error',
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=['pending', 'running']) | Q(completed_at__isnull=False),
+                name='finished_run_has_completed_at',
+            ),
+        ]
 
     def __str__(self):
         return f'Run {self.pk} of experiment {self.experiment_id}'

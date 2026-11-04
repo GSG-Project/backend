@@ -99,3 +99,31 @@ def test_clean_skips_check_when_fields_are_missing(experiment):
 
     ModelResponse(run=run, status='failed').clean()  # must not raise
     ModelResponse(status='failed').clean()
+
+
+def test_completed_evaluation_requires_a_judge(experiment):
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Run.objects.create(experiment=experiment, evaluation_status='completed')
+
+
+def test_completed_evaluation_with_a_judge_is_allowed(experiment):
+    judge = AIModel.objects.create(name='J', provider='groq', api_model_identifier='j', is_judge=True)
+
+    Run.objects.create(experiment=experiment, evaluation_status='completed', judge_model=judge)
+
+
+def test_failed_evaluation_requires_an_error_message(experiment):
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Run.objects.create(experiment=experiment, evaluation_status='failed')
+
+    Run.objects.create(experiment=experiment, evaluation_status='failed', evaluation_error='invalid JSON')
+
+
+@pytest.mark.parametrize('status', ['completed', 'failed'])
+def test_finished_run_requires_completed_at(experiment, status):
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Run.objects.create(experiment=experiment, status=status)
+
+
+def test_unfinished_run_may_have_no_completed_at(experiment):
+    Run.objects.create(experiment=experiment, status='running')
