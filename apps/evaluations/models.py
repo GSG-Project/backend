@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
@@ -44,3 +45,13 @@ class Evaluation(models.Model):
 
     def __str__(self):
         return f'{self.criterion}: {self.score}'
+
+    def clean(self):
+        # A failed response has nothing to score. This spans two tables, so the
+        # database cannot check it; bulk operations skip it, so use save().
+        if self.response_id is not None and self.response.status == 'failed':
+            raise ValidationError('A failed response cannot be scored.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

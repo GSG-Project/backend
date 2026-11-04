@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
 
@@ -58,3 +59,12 @@ def test_seed_criteria_is_idempotent():
     call_command('seed_criteria')
 
     assert EvaluationCriterion.objects.count() == 4
+
+
+def test_failed_response_cannot_be_scored(response, criterion):
+    response.status = 'failed'
+    response.response_text = None
+    response.save()
+
+    with pytest.raises(ValidationError):
+        Evaluation.objects.create(response=response, criterion=criterion, score=5)
