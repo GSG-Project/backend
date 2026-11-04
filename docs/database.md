@@ -67,6 +67,8 @@ One execution of an experiment. A rerun adds a run and keeps earlier results.
 | `judge_model` | Which judge scored this run. Optional until judged. The admin only offers models with `is_judge` |
 | `evaluation_status` | `pending`, `completed`, `failed`, `skipped` |
 | `evaluation_error` | Required when `evaluation_status` is `failed` |
+| `winner` | The judge's pick, an `ExperimentModel` of the same experiment (checked in `save()`). Empty unless the evaluation completed |
+| `judge_reasoning` | The judge's explanation. Empty unless the evaluation completed |
 
 `evaluation_status` tells "the judge failed" apart from "not judged yet". `skipped` means fewer than two successful responses, so there was nothing to compare. A `completed` evaluation requires a `judge_model`.
 
@@ -104,10 +106,22 @@ The judge's score for one response on one criterion.
 
 `evaluations` refers to `comparisons.ModelResponse` by string, so the `evaluations` app does not import `comparisons`.
 
+## How a comparison is saved
+
+`ComparisonService` (in `apps/comparisons/services/`) saves as it goes, so a failure part-way keeps what already succeeded.
+
+1. The request is validated against the catalog (`AIModel`: active, not a judge). An invalid request saves nothing.
+2. An `Experiment`, its `ExperimentModel` rows and a `Run` (`running`) are created.
+3. The models are called concurrently. Worker threads only call the providers; the results are saved afterwards in the request thread.
+4. Each result becomes a `ModelResponse` (`success` or `failed`). Cost is calculated from tokens and the model's prices, and is `NULL` when either is unknown.
+5. With two or more successful responses the judge is called. The scores go to `Evaluation`, and the winner and reasoning to `Run`. Otherwise the evaluation is `skipped`, or `failed` with the error.
+6. The run is closed: `failed` if no model answered, `completed` otherwise. If an unexpected error stops the process, the run is closed as `failed` and is never left `running`.
+
+Models are called through the provider named on `AIModel.provider` (`providers/factory.py`). The judge model row is created from the `JUDGE_MODEL` setting if it is missing, and missing criteria are created from `apps/evaluations/criteria.py`, so scores are never dropped.
+
 ## Known limitations
 
-- **Judge output not stored yet.** The judge also returns an overall score, strengths and weaknesses per answer, a winner and its reasoning. Only the per-criterion scores have a column. The overall score can be computed as the average.
+- **Part of the judge output is not stored.** The winner and its reasoning are saved on `Run`, and the per-criterion scores in `Evaluation`. The overall score (the average of the criteria), and the per-answer strengths and weaknesses, are returned by the API but not saved.
 - **No rubric or prompt history.** Editing a criterion changes what older scores mean, and the judge prompt is not stored per run. Needed for FR-20 and FR-21.
 - **No price history.** `cost` is stored on each response, but the prices used are not. Needed if prices change often (FR-22).
-- **Two lists of models.** The services still read `apps/ai_models/services/registry.py`. Switching them to read `AIModel` is a follow-up.
 - **No users yet.** History per user (FR-26) needs the user model from the authentication work.
