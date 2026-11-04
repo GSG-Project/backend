@@ -218,6 +218,23 @@ urlpatterns = [
 ]
 ```
 
+Finally, document it so it shows up properly in Swagger. Put `@extend_schema` above `@api_view` and describe what the endpoint does, its request, and its responses:
+
+```python
+from drf_spectacular.utils import extend_schema
+
+@extend_schema(
+    tags=["Notes"],
+    summary="List the active notes",
+    responses={200: NoteSerializer(many=True)},
+)
+@api_view(['GET'])
+def note_list(request):
+    ...
+```
+
+`tests/test_api_docs.py` fails if an endpoint is left undocumented.
+
 That's it. After mounting the app's `urls.py` in `config/urls.py` (for example `path('notes/', include('apps.notes.urls'))`), the endpoint appears automatically in Swagger at `/api/docs/`.
 
 > The `notes` app does not exist in the project. Add apps with `python manage.py startapp <name> apps/<name>` and register them in `LOCAL_APPS` in `config/settings/base.py`.

@@ -187,6 +187,8 @@ The local API will be available at:
 
 ## 7. API Overview
 
+Interactive documentation is generated from the code and served at `/api/docs/` (Swagger) and `/api/redoc/`. It shows every endpoint with its description, request and response schemas, and examples. The examples below mirror it.
+
 ### List Models
 
 `GET /api/models/` returns the models users can compare (active and not a judge). The `id` is what you send back when comparing.
@@ -295,6 +297,7 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 
 ## 10. Development Guidelines
 
+- Document every endpoint with `@extend_schema` (summary, description, request and response serializers, examples). `tests/test_api_docs.py` fails if the Swagger schema has errors, an endpoint is undocumented, or a documented example no longer matches the response schema.
 - Lint with `ruff check .` (install with `pip install -r requirements-dev.txt`). The code added with the database tables passes; a few older files still have findings (import order, unused imports) to clean up separately.
 
 - Keep provider-specific code inside `providers/`.

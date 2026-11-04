@@ -125,6 +125,15 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Compare the response quality, latency, token usage, and cost of LLMs.',
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'TAGS': [
+        {'name': 'Models', 'description': 'The AI models available for comparison.'},
+        {'name': 'Comparisons', 'description': 'Run a prompt against several models and have it judged.'},
+    ],
+    # Readable names for the choice lists in the generated schema.
+    'ENUM_NAME_OVERRIDES': {
+        'ProviderEnum': 'apps.ai_models.models.AIModel.Provider',
+        'ResultStatusEnum': 'apps.comparisons.models.ModelResponse.Status',
+    },
 }
 
 
