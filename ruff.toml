@@ -1,0 +1,10 @@
+line-length = 110
+extend-exclude = ["migrations"]
+
+[lint]
+# pyflakes, pycodestyle errors, import sorting
+select = ["E", "F", "I"]
+
+[lint.per-file-ignores]
+# django.setup() must run before the Django imports in these manual scripts.
+"scripts/*" = ["E402"]

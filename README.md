@@ -56,11 +56,19 @@ backend/
 │   ├── base.py
 │   └── exceptions.py
 ├── tests/                      # Cross-app / integration tests
+├── scripts/                    # Manual checks against the real provider APIs (not tests)
+├── docs/                       # ERD, database description, guide for Express developers
 ├── manage.py
 ├── pytest.ini
 ├── requirements.txt
 └── .env.example
 ```
+
+### Database
+
+PostgreSQL, with seven tables across the three apps: `AIModel` (`ai_models`); `Experiment`, `ExperimentModel`, `Run`, `ModelResponse` (`comparisons`); `EvaluationCriterion`, `Evaluation` (`evaluations`). See [`docs/database.md`](docs/database.md) for each table and its rules, and open `docs/erd.html` in a browser for the diagram.
+
+After changing a model, run `python manage.py makemigrations` and commit the migration file with the code.
 
 ### Directory Responsibilities
 
@@ -73,6 +81,8 @@ backend/
 - **`apps/evaluations/`** — The AI-as-a-Judge: evaluation rubric and stored evaluations.
 - **`apps/evaluations/services/judge_service.py`** — Sends responses to the judge model, mitigates bias, and validates its structured JSON output.
 - **`providers/`** — Provider-specific API integrations. Each provider implements the shared interface in `base.py`.
+- **`docs/`** — `database.md` (tables and rules), `erd.html` (diagram), and `django-for-express-devs.md`.
+- **`scripts/`** — Manual scripts that call the real Gemini/Groq APIs. Run from `backend/`, for example `python -m scripts.try_groq`. They are not part of `pytest`.
 - **`apps/<app>/tests/`** — Unit tests for each app. **`tests/`** holds cross-app tests.
 - **`.env.example`** — Template for local environment variables. Copy it to `.env`.
 
@@ -159,8 +169,12 @@ Then set `SECRET_KEY`, `DATABASE_URL` (for example `postgres://user:password@loc
 
 ```bash
 python manage.py migrate
+python manage.py seed_models      # supported AI models and the judge
+python manage.py seed_criteria    # evaluation criteria
 python manage.py runserver
 ```
+
+Prices are not seeded. Enter each model's price per 1M tokens in the admin; until then, cost is reported as unavailable.
 
 The local API will be available at:
 
@@ -267,11 +281,13 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 
 ## 10. Development Guidelines
 
+- Lint with `ruff check .` (install with `pip install -r requirements-dev.txt`). The code added with the database tables passes; a few older files still have findings (import order, unused imports) to clean up separately.
+
 - Keep provider-specific code inside `providers/`.
 - Keep business logic inside the app `services/` packages.
 - Validate requests and responses using DRF serializers.
 - Keep views thin; they validate input and delegate to services.
-- Keep app dependencies one-directional: `comparisons` may use `evaluations`, `ai_models`, and `providers`, never the reverse.
+- Keep code dependencies one-directional: `comparisons` may import from `evaluations`, `ai_models`, and `providers`, never the reverse. Database links may point the other way (`Evaluation` references `comparisons.ModelResponse`); use a string reference such as `'comparisons.ModelResponse'` there, not an import.
 - Never expose API keys or internal credentials in API responses or logs.
 - Handle provider errors consistently.
 - Keep the API contract synchronized with the frontend team.
