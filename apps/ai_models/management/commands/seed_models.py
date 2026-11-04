@@ -2,7 +2,14 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.ai_models.models import AIModel
-from apps.ai_models.services.registry import GEMINI_MODELS
+
+# Models users can compare. Prices are not seeded; enter them in the admin.
+SUPPORTED_MODELS = [
+    ('gemini-3.8-flash', 'Gemini 3.8 Flash'),
+    ('gemini-3.6-flash', 'Gemini 3.6 Flash'),
+    ('gemini-3.5-flash-lite', 'Gemini 3.5 Flash-Lite'),
+    ('gemini-3.1-flash-lite', 'Gemini 3.1 Flash-Lite'),
+]
 
 
 class Command(BaseCommand):
@@ -12,12 +19,12 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        for entry in GEMINI_MODELS:
+        for identifier, name in SUPPORTED_MODELS:
             self._upsert(
-                identifier=entry['id'],
-                name=entry['name'],
+                identifier=identifier,
+                name=name,
                 provider=AIModel.Provider.GEMINI,
-                is_active=entry['is_active'],
+                is_active=True,
             )
 
         self._upsert(

@@ -187,58 +187,72 @@ The local API will be available at:
 
 ## 7. API Overview
 
-The main planned endpoint is:
+### List Models
+
+`GET /api/models/` returns the models users can compare (active and not a judge). The `id` is what you send back when comparing.
+
+```json
+{
+  "models": [
+    { "id": "gemini-3.8-flash", "name": "Gemini 3.8 Flash", "provider": "gemini", "is_active": true }
+  ]
+}
+```
 
 ### Compare Models
 
 `POST /api/comparisons/`
 
-**Example request:**
+**Request:**
 
 ```json
 {
   "prompt": "Explain REST APIs in simple terms.",
-  "models": [
-    "model-a",
-    "model-b"
-  ]
+  "model_ids": ["gemini-3.8-flash", "gemini-3.6-flash"]
 }
 ```
 
-**Illustrative response:**
+Select at least two different models. A request that fails validation returns `400` and saves nothing.
+
+**Response (illustrative values):**
 
 ```json
 {
-  "comparison_id": "example-id",
-  "responses": [
+  "experiment_id": 12,
+  "run_id": 12,
+  "prompt": "Explain REST APIs in simple terms.",
+  "results": [
     {
-      "model": "model-a",
-      "text": "Example response A",
-      "latency_ms": 1200,
-      "input_tokens": null,
-      "output_tokens": null,
+      "model_id": "gemini-3.8-flash",
+      "answer": "Example response A",
+      "metadata": {
+        "latency_ms": 1200.4,
+        "input_tokens": 15,
+        "output_tokens": 80,
+        "total_tokens": 95,
+        "cost": 0.000212,
+        "cost_currency": "USD"
+      },
+      "status": "success",
       "error": null
     },
     {
-      "model": "model-b",
-      "text": "Example response B",
-      "latency_ms": 1800,
-      "input_tokens": 15,
-      "output_tokens": 80,
-      "error": null
+      "model_id": "gemini-3.6-flash",
+      "answer": null,
+      "metadata": null,
+      "status": "failed",
+      "error": { "code": "provider_error", "message": "This model could not generate a response." }
     }
   ],
-  "judge": {
-    "score_a": 8,
-    "score_b": 7,
-    "reason": "Response A is clearer and more complete."
-  }
+  "evaluation": null,
+  "evaluation_error": "At least two successful model responses are required for evaluation."
 }
 ```
 
-The example values are illustrative and do not represent real model results. The final schema may change during implementation.
-
-Token counts should be `null` when the provider does not supply reliable usage information; they should not be reported as zero.
+- Each comparison is saved as an experiment with one run, and `experiment_id` / `run_id` identify it.
+- If one model fails, the other response is kept and the failure is reported separately. The judge needs at least two successful responses, otherwise `evaluation` is `null` and `evaluation_error` says why.
+- `cost` is calculated from the token counts and the model's price (set in the admin). `input_tokens`, `output_tokens` and `cost` are `null` when the provider reports no usage or the price is unknown; they are never reported as zero.
+- When two or more responses succeed, `evaluation` holds the judge's result: `winner`, `winner_model_id`, `reasoning`, and per-answer scores.
 
 ## 8. Evaluation Criteria
 
