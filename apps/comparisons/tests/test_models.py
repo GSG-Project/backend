@@ -92,3 +92,10 @@ def test_rerun_keeps_earlier_results(experiment):
 
     assert experiment.runs.count() == 2
     assert first.responses.get().response_text == 'a'
+
+
+def test_clean_skips_check_when_fields_are_missing(experiment):
+    run = Run.objects.create(experiment=experiment)
+
+    ModelResponse(run=run, status='failed').clean()  # must not raise
+    ModelResponse(status='failed').clean()

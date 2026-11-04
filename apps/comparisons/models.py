@@ -123,7 +123,10 @@ class ModelResponse(models.Model):
 
     def clean(self):
         # The database cannot check that the run and the experiment model
-        # belong to the same experiment, so it is checked here.
+        # belong to the same experiment, so it is checked here. Bulk operations
+        # (bulk_create, update) skip this, so create responses with save().
+        if self.run_id is None or self.experiment_model_id is None:
+            return  # a missing field is reported by the form or field validation
         if self.run.experiment_id != self.experiment_model.experiment_id:
             raise ValidationError('The run and the model belong to different experiments.')
 
