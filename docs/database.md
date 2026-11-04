@@ -1,0 +1,113 @@
+# Database
+
+PostgreSQL, managed with Django migrations. Open [`erd.html`](erd.html) in a browser for the diagram.
+
+```
+AIModel ──< ExperimentModel >── Experiment ──< Run ──< ModelResponse ──< Evaluation >── EvaluationCriterion
+   └────────── judge_model (optional) ─────────────┘          └── ExperimentModel
+```
+
+Each app owns its tables:
+
+| App | Tables |
+|---|---|
+| `ai_models` | `AIModel` |
+| `comparisons` | `Experiment`, `ExperimentModel`, `Run`, `ModelResponse` |
+| `evaluations` | `EvaluationCriterion`, `Evaluation` |
+
+## Conventions
+
+- **`NULL` means "not available"**, never `0`. This applies to prices, token counts, latency and cost.
+- **Models and criteria with history are never deleted**, only deactivated (`is_active`). Deleting them is blocked by the database (`PROTECT`).
+- **Deleting an experiment deletes its runs and responses**, and deleting a response deletes its scores.
+- **Rules that span tables** (marked "checked in `save()`" below) cannot be enforced by the database. They are skipped by `bulk_create`, `.update()` and raw SQL, so create these rows with `save()` or `objects.create()`.
+
+## `AIModel`
+
+A model in the catalog: either one users can compare, or a judge.
+
+| Field | Notes |
+|---|---|
+| `name` | Display name |
+| `provider` | `gemini` or `groq` |
+| `api_model_identifier` | Unique. The id sent to the provider API |
+| `input_price_per_million`, `output_price_per_million` | Price per 1M tokens. `NULL` = unknown, so cost is unavailable |
+| `currency` | 3-letter code, default `USD` |
+| `is_active` | Inactive models are hidden everywhere but stay in the database |
+| `is_judge` | Judges evaluate responses and are not offered for comparison |
+
+Load the starting data with `python manage.py seed_models`. It only creates missing rows and never changes existing ones, so admin edits are kept. Prices are not seeded.
+
+## `Experiment`
+
+One comparison request: the prompt and the models chosen.
+
+| Field | Notes |
+|---|---|
+| `prompt` | The text sent to every model |
+| `created_at` | Indexed, for history listings |
+
+Models are linked through `ExperimentModel`. A `user` field will be added with authentication.
+
+## `ExperimentModel`
+
+Links an experiment to a model it uses.
+
+- Unique per (`experiment`, `ai_model`): the same model cannot be picked twice.
+- The MVP allows exactly two models per experiment. This is enforced by the comparison service, not the database, so it can be raised later without a migration.
+
+## `Run`
+
+One execution of an experiment. A rerun adds a run and keeps earlier results.
+
+| Field | Notes |
+|---|---|
+| `status` | `pending`, `running`, `completed`, `failed` |
+| `started_at`, `completed_at` | `completed_at` is required once the run is `completed` or `failed` |
+| `judge_model` | Which judge scored this run. Optional until judged. The admin only offers models with `is_judge` |
+| `evaluation_status` | `pending`, `completed`, `failed`, `skipped` |
+| `evaluation_error` | Required when `evaluation_status` is `failed` |
+
+`evaluation_status` tells "the judge failed" apart from "not judged yet". `skipped` means fewer than two successful responses, so there was nothing to compare. A `completed` evaluation requires a `judge_model`.
+
+## `ModelResponse`
+
+The result of sending the prompt to one model in one run.
+
+| Field | Notes |
+|---|---|
+| `run`, `experiment_model` | Unique together: one response per model per run |
+| `response_text` | `NULL` for a failed call |
+| `input_tokens`, `output_tokens`, `latency_ms` | `NULL` when unavailable |
+| `cost` | Calculated from tokens and the model's prices. `NULL` when either is unknown |
+| `status` | `success` or `failed` |
+| `error_message` | Empty unless failed |
+
+Rules:
+- A `success` response must have `response_text` (database check).
+- The run and the experiment model must belong to the same experiment (checked in `save()`).
+
+## `EvaluationCriterion`
+
+A rubric criterion the judge scores. All responses in a run are scored against the same criteria, so scores are comparable.
+
+`python manage.py seed_criteria` loads **accuracy, relevance, clarity, completeness**, which are the criteria the judge prompt scores today. If you change the criteria, change the judge prompt in `apps/evaluations/services/judge_service.py` to match.
+
+## `Evaluation`
+
+The judge's score for one response on one criterion.
+
+- Unique per (`response`, `criterion`).
+- `score` is 1 to 10 (database check).
+- A failed response cannot be scored (checked in `save()`).
+- `feedback` is optional text.
+
+`evaluations` refers to `comparisons.ModelResponse` by string, so the `evaluations` app does not import `comparisons`.
+
+## Known limitations
+
+- **Judge output not stored yet.** The judge also returns an overall score, strengths and weaknesses per answer, a winner and its reasoning. Only the per-criterion scores have a column. The overall score can be computed as the average.
+- **No rubric or prompt history.** Editing a criterion changes what older scores mean, and the judge prompt is not stored per run. Needed for FR-20 and FR-21.
+- **No price history.** `cost` is stored on each response, but the prices used are not. Needed if prices change often (FR-22).
+- **Two lists of models.** The services still read `apps/ai_models/services/registry.py`. Switching them to read `AIModel` is a follow-up.
+- **No users yet.** History per user (FR-26) needs the user model from the authentication work.
