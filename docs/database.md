@@ -11,6 +11,7 @@ Each app owns its tables:
 
 | App | Tables |
 |---|---|
+| `accounts` | `User` |
 | `ai_models` | `AIModel` |
 | `comparisons` | `Experiment`, `ExperimentModel`, `Run`, `ModelResponse` |
 | `evaluations` | `EvaluationCriterion`, `Evaluation` |
@@ -21,6 +22,19 @@ Each app owns its tables:
 - **Models and criteria with history are never deleted**, only deactivated (`is_active`). Deleting them is blocked by the database (`PROTECT`).
 - **Deleting an experiment deletes its runs and responses**, and deleting a response deletes its scores.
 - **Rules that span tables** (marked "checked in `save()`" below) cannot be enforced by the database. They are skipped by `bulk_create`, `.update()` and raw SQL, so create these rows with `save()` or `objects.create()`.
+
+## `User`
+
+A person with an account (`apps/accounts`). It replaces Django's default user, so it was created before any other migration ran.
+
+| Field | Notes |
+|---|---|
+| `email` | Unique, stored in lower case. This is the sign-in name |
+| `name` | Display name |
+| `password` | Hashed by Django, never stored in clear text |
+| `is_active`, `is_staff`, `is_superuser`, `date_joined`, `last_login` | Standard Django account fields |
+
+There is no username. Other apps point to it with `settings.AUTH_USER_MODEL`.
 
 ## `AIModel`
 
@@ -47,7 +61,7 @@ One comparison request: the prompt and the models chosen.
 | `prompt` | The text sent to every model |
 | `created_at` | Indexed, for history listings |
 
-Models are linked through `ExperimentModel`. A `user` field will be added with authentication.
+Models are linked through `ExperimentModel`. A `user` field will be added with the history work; until then experiments belong to no one.
 
 ## `ExperimentModel`
 
@@ -124,4 +138,4 @@ Models are called through the provider named on `AIModel.provider` (`providers/f
 - **Part of the judge output is not stored.** The winner and its reasoning are saved on `Run`, and the per-criterion scores in `Evaluation`. The overall score (the average of the criteria), and the per-answer strengths and weaknesses, are returned by the API but not saved.
 - **No rubric or prompt history.** Editing a criterion changes what older scores mean, and the judge prompt is not stored per run. Needed for FR-20 and FR-21.
 - **No price history.** `cost` is stored on each response, but the prices used are not. Needed if prices change often (FR-22).
-- **No users yet.** History per user (FR-26) needs the user model from the authentication work.
+- **Experiments are not linked to users yet.** The `User` table exists (FR-25), but linking experiments to it, and listing a user's history, comes with FR-26. Anonymous comparisons will stay unlinked and cannot be retrieved later.

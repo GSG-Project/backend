@@ -22,6 +22,7 @@ The project is being developed as a training MVP, with an initial focus on model
 | Django REST Framework | REST API layer, serializers, and request/response validation |
 | drf-spectacular | OpenAPI schema and Swagger / ReDoc documentation |
 | django-environ | Settings loaded from environment variables (`.env`) |
+| djangorestframework-simplejwt | JWT sign-in (access and refresh tokens) |
 | django-cors-headers | CORS for the React frontend |
 | httpx | Async HTTP client for calling AI provider APIs |
 | PostgreSQL (psycopg 3) | Database |
@@ -42,6 +43,7 @@ backend/
 │   ├── asgi.py
 │   └── wsgi.py
 ├── apps/
+│   ├── accounts/               # Custom user (email + password) and the auth endpoints
 │   ├── ai_models/              # Supported AI models, pricing, cost calculation
 │   │   └── services/
 │   │       └── pricing_service.py
@@ -73,6 +75,7 @@ After changing a model, run `python manage.py makemigrations` and commit the mig
 ### Directory Responsibilities
 
 - **`config/`** — Django project configuration. Settings are split into `base`, `development`, and `production`.
+- **`apps/accounts/`** — The custom `User` model (sign in with email) and the register / login / refresh / me endpoints.
 - **`apps/ai_models/`** — The catalog of supported AI models and their pricing.
 - **`apps/ai_models/services/pricing_service.py`** — Calculates estimated cost from token usage and model pricing.
 - **`apps/comparisons/`** — The comparison workflow: API endpoints, serializers, and persisted experiments and model responses.
@@ -188,6 +191,19 @@ The local API will be available at:
 ## 7. API Overview
 
 Interactive documentation is generated from the code and served at `/api/docs/` (Swagger) and `/api/redoc/`. It shows every endpoint with its description, request and response schemas, and examples. The examples below mirror it.
+
+### Authentication
+
+Users sign in with email and password and receive JWTs. Comparisons stay open to anonymous users, so a token is optional on the other endpoints (but an invalid or expired token returns `401`, so drop it and refresh when that happens).
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/auth/register/` | Create an account (`email`, `name`, `password`). Returns the user and the tokens. |
+| `POST /api/auth/login/` | `email` + `password` → `access` (30 min) and `refresh` (7 days). |
+| `POST /api/auth/refresh/` | `refresh` → a new `access`. |
+| `GET /api/auth/me/` | The signed-in user. Needs `Authorization: Bearer <access>`. |
+
+Emails are stored in lower case and are unique. Passwords are checked with Django's strength rules.
 
 ### List Models
 
@@ -316,8 +332,7 @@ Unit tests should mock external provider calls where possible to avoid unnecessa
 Potential extensions after the core MVP is working include:
 
 - Support for additional AI models.
-- Persistent comparison history.
-- User accounts and personalized history.
+- Per-user comparison history, reruns and run comparison.
 - More detailed performance analytics.
 - Configurable evaluation criteria.
 - Comparison of quality, speed, and cost according to user preferences.

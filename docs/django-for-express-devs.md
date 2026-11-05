@@ -18,6 +18,7 @@ This guide explains how our Django backend is organized, using Express concepts 
 | `app.use(middleware)` | `MIDDLEWARE` list | `config/settings/base.py` |
 | Router (`express.Router()`) | `urls.py` | each app + `config/urls.py` |
 | Controller | View (`views.py`) | each app |
+| `jsonwebtoken` + auth middleware | simplejwt + `@permission_classes` | `apps/accounts/` |
 | Joi / Zod validation | Serializer (`serializers.py`) | each app |
 | Mongoose / Sequelize / Prisma model | Model (`models.py`) | each app |
 | Prisma migrations | Django migrations (`migrations/`) | each app |
@@ -69,6 +70,7 @@ backend/
 │   ├── wsgi.py
 │   └── asgi.py
 ├── apps/
+│   ├── accounts/
 │   ├── ai_models/
 │   ├── comparisons/
 │   └── evaluations/
@@ -105,6 +107,12 @@ python manage.py shell            # interactive console with the project loaded
 `manage.py` uses development settings by default; `wsgi.py` and `asgi.py` use production settings.
 
 ### `apps/`: our features
+
+#### `apps/accounts/`: users and sign-in
+- Table `User`: replaces Django's default user. Sign in with **email** and password (no username); also stores a `name`. The project sets `AUTH_USER_MODEL = 'accounts.User'`, which must never change after the first migration.
+- Auth is JWT via `djangorestframework-simplejwt` (like `jsonwebtoken` in Express): `register`, `login`, `refresh`, `me`. Routes are mounted at `/api/auth/`.
+- Make a view require login with `@permission_classes([IsAuthenticated])`; then `request.user` is the signed-in user. Views without it stay public, and a valid token is still accepted.
+- Reference users with `settings.AUTH_USER_MODEL` (or `get_user_model()`), never by importing `User` directly in other apps' models.
 
 #### `apps/ai_models/`: supported models and pricing
 - Table `AIModel`: the models users can compare, plus the judge model (`is_judge`). Stores each model's price per 1M input and output tokens.

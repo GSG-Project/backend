@@ -5,6 +5,7 @@ Environment-specific overrides live in development.py and production.py.
 Secrets and environment-dependent values are read from the .env file.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -39,6 +40,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    'apps.accounts',
     'apps.ai_models',
     'apps.comparisons',
     'apps.evaluations',
@@ -113,11 +115,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework
 
+AUTH_USER_MODEL = 'accounts.User'
+
 REST_FRAMEWORK = {
+    # Sending a token is optional: the comparison endpoints stay open to anonymous users.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
 SPECTACULAR_SETTINGS = {
@@ -126,6 +139,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'TAGS': [
+        {'name': 'Auth', 'description': 'Create an account, sign in and refresh tokens.'},
         {'name': 'Models', 'description': 'The AI models available for comparison.'},
         {'name': 'Comparisons', 'description': 'Run a prompt against several models and have it judged.'},
     ],
