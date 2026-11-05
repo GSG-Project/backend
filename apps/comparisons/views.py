@@ -100,7 +100,7 @@ PARTIAL_FAILURE_EXAMPLE = {
 
 @extend_schema(
     tags=["Comparisons"],
-    auth=[],  # public for now; change when authentication is added
+    auth=[],  # open to anonymous users; a token is optional
     summary="Compare models on one prompt",
     description=(
         "Sends the same prompt to every selected model at the same time, saves the comparison, "

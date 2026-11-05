@@ -20,7 +20,17 @@ def operation(schema, path, method):
     return schema['paths'][path][method]
 
 
-@pytest.mark.parametrize('path, method', [('/api/models/', 'get'), ('/api/comparisons/', 'post')])
+PUBLIC_ENDPOINTS = [
+    ('/api/models/', 'get'),
+    ('/api/comparisons/', 'post'),
+    ('/api/auth/register/', 'post'),
+    ('/api/auth/login/', 'post'),
+    ('/api/auth/refresh/', 'post'),
+]
+ALL_ENDPOINTS = PUBLIC_ENDPOINTS + [('/api/auth/me/', 'get')]
+
+
+@pytest.mark.parametrize('path, method', ALL_ENDPOINTS)
 def test_every_endpoint_is_described(schema, path, method):
     op = operation(schema, path, method)
 
@@ -62,7 +72,22 @@ def test_documented_examples_match_the_response_schema(name):
     assert serializer.is_valid(), serializer.errors
 
 
-@pytest.mark.parametrize('path, method', [('/api/models/', 'get'), ('/api/comparisons/', 'post')])
+@pytest.mark.parametrize('path, method', PUBLIC_ENDPOINTS)
 def test_endpoints_are_documented_as_public(schema, path, method):
-    # Update this when authentication is added and the endpoints require login.
     assert not operation(schema, path, method).get('security')
+
+
+def test_the_current_user_endpoint_documents_the_bearer_token(schema):
+    security = operation(schema, '/api/auth/me/', 'get').get('security')
+
+    assert security and any('jwtAuth' in option for option in security)
+    assert 'jwtAuth' in schema['components']['securitySchemes']
+
+
+def test_registration_documents_its_request_and_tokens(schema):
+    op = operation(schema, '/api/auth/register/', 'post')
+
+    assert 'application/json' in op['requestBody']['content']
+    assert 'password' in schema['components']['schemas']['Register']['properties']
+    response_schema = schema['components']['schemas']['RegisterResponse']
+    assert {'access', 'refresh', 'user'} <= set(response_schema['properties'])
