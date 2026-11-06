@@ -141,7 +141,7 @@ This folder is plain Python, not a Django app. Each AI provider (OpenAI, Anthrop
 
 ### Other files
 
-- **`tests/`**: tests that cover more than one app. Each app also has its own `tests/` folder.
+- **`tests/`**: tests grouped by feature, one folder per feature (for example `tests/user_history/test_history_api.py`). Older unit tests still live in each app's own `tests/` folder.
 - **`pytest.ini`**: pytest config. It tells pytest which Django settings to use.
 - **`requirements.txt`**: dependencies with exact versions.
 - **`.env.example`**: a template for `.env`. Copy it to `.env` and fill in real values. **Never commit `.env`.**

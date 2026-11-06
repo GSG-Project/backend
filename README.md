@@ -57,7 +57,7 @@ backend/
 ├── providers/                  # Provider-specific AI API integrations
 │   ├── base.py
 │   └── exceptions.py
-├── tests/                      # Cross-app / integration tests
+├── tests/                      # Tests grouped by feature: tests/<feature>/test_*.py
 ├── scripts/                    # Manual checks against the real provider APIs (not tests)
 ├── docs/                       # ERD, database description, guide for Express developers
 ├── manage.py
@@ -86,7 +86,7 @@ After changing a model, run `python manage.py makemigrations` and commit the mig
 - **`providers/`** — Provider-specific API integrations. Each provider implements the shared interface in `base.py`.
 - **`docs/`** — `database.md` (tables and rules), `erd.html` (diagram), and `django-for-express-devs.md`.
 - **`scripts/`** — Manual scripts that call the real Gemini/Groq APIs. Run from `backend/`, for example `python -m scripts.try_groq`. They are not part of `pytest`.
-- **`apps/<app>/tests/`** — Unit tests for each app. **`tests/`** holds cross-app tests.
+- **`tests/<feature>/`** — Tests for new work live in a folder named after the feature (for example `tests/user_history/`). Older unit tests still sit in `apps/<app>/tests/`.
 - **`.env.example`** — Template for local environment variables. Copy it to `.env`.
 
 ## 4. How the System Works
@@ -204,6 +204,17 @@ Users sign in with email and password and receive JWTs. Comparisons stay open to
 | `GET /api/auth/me/` | The signed-in user. Needs `Authorization: Bearer <access>`. |
 
 Emails are stored in lower case and are unique. Passwords are checked with Django's strength rules.
+
+### Experiment History
+
+Signed-in users can come back to their saved comparisons. Both endpoints need `Authorization: Bearer <access>`; a comparison made while signed in is saved under that user, and one made anonymously is saved but cannot be read back.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/experiments/` | Your experiments, newest first, 20 per page (`?page=`, `?page_size=` up to 50). Each has its models, `run_count` and the `latest_run` with its winner. |
+| `GET /api/experiments/{id}/` | One experiment with every run: each model's answer, metrics and error, per-criterion `scores`, the winner and the judge's reasoning. `404` when it does not exist or is not yours. |
+
+The results use the same shape as a comparison response (`answer`, `metadata`, `status`, `error`), plus `scores`.
 
 ### List Models
 
