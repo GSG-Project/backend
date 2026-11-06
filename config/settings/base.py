@@ -141,12 +141,15 @@ SPECTACULAR_SETTINGS = {
     'TAGS': [
         {'name': 'Auth', 'description': 'Create an account, sign in and refresh tokens.'},
         {'name': 'Models', 'description': 'The AI models available for comparison.'},
+        {'name': 'Experiments', 'description': 'Your saved experiments and their results.'},
         {'name': 'Comparisons', 'description': 'Run a prompt against several models and have it judged.'},
     ],
     # Readable names for the choice lists in the generated schema.
     'ENUM_NAME_OVERRIDES': {
         'ProviderEnum': 'apps.ai_models.models.AIModel.Provider',
         'ResultStatusEnum': 'apps.comparisons.models.ModelResponse.Status',
+        'RunStatusEnum': 'apps.comparisons.models.Run.Status',
+        'EvaluationStatusEnum': 'apps.comparisons.models.Run.EvaluationStatus',
     },
 }
 

@@ -6,6 +6,7 @@ api_patterns = [
     path('auth/', include('apps.accounts.urls')),
     path('models/', include('apps.ai_models.urls')),
     path('comparisons/', include('apps.comparisons.urls')),
+    path('experiments/', include('apps.comparisons.experiment_urls')),
     path('evaluations/', include('apps.evaluations.urls')),
 ]
 
