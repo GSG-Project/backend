@@ -58,10 +58,11 @@ One comparison request: the prompt and the models chosen.
 
 | Field | Notes |
 |---|---|
+| `user` | Who ran it. Empty for anonymous comparisons. Deleting the user deletes their experiments |
 | `prompt` | The text sent to every model |
-| `created_at` | Indexed, for history listings |
+| `created_at` | Indexed, for history listings (also indexed together with `user`) |
 
-Models are linked through `ExperimentModel`. A `user` field will be added with the history work; until then experiments belong to no one.
+Models are linked through `ExperimentModel`. Anonymous experiments are saved but can never be listed or read later, because nothing identifies their owner.
 
 ## `ExperimentModel`
 
@@ -125,7 +126,7 @@ The judge's score for one response on one criterion.
 `ComparisonService` (in `apps/comparisons/services/`) saves as it goes, so a failure part-way keeps what already succeeded.
 
 1. The request is validated against the catalog (`AIModel`: active, not a judge). An invalid request saves nothing.
-2. An `Experiment`, its `ExperimentModel` rows and a `Run` (`running`) are created.
+2. An `Experiment` (with the signed-in `user`, if any), its `ExperimentModel` rows and a `Run` (`running`) are created.
 3. The models are called concurrently. Worker threads only call the providers; the results are saved afterwards in the request thread.
 4. Each result becomes a `ModelResponse` (`success` or `failed`). Cost is calculated from tokens and the model's prices, and is `NULL` when either is unknown.
 5. With two or more successful responses the judge is called. The scores go to `Evaluation`, and the winner and reasoning to `Run`. Otherwise the evaluation is `skipped`, or `failed` with the error.
@@ -138,4 +139,4 @@ Models are called through the provider named on `AIModel.provider` (`providers/f
 - **Part of the judge output is not stored.** The winner and its reasoning are saved on `Run`, and the per-criterion scores in `Evaluation`. The overall score (the average of the criteria), and the per-answer strengths and weaknesses, are returned by the API but not saved.
 - **No rubric or prompt history.** Editing a criterion changes what older scores mean, and the judge prompt is not stored per run. Needed for FR-20 and FR-21.
 - **No price history.** `cost` is stored on each response, but the prices used are not. Needed if prices change often (FR-22).
-- **Experiments are not linked to users yet.** The `User` table exists (FR-25), but linking experiments to it, and listing a user's history, comes with FR-26. Anonymous comparisons will stay unlinked and cannot be retrieved later.
+- **Anonymous experiments cannot be claimed.** If someone compares without signing in and registers afterwards, those experiments stay ownerless. Claiming them is planned as a later task.

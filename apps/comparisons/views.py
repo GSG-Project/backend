@@ -177,7 +177,9 @@ def create_comparison(request):
 
     try:
         service = ComparisonService()
-        result = service.compare(prompt, model_ids)
+        # Anonymous users are saved without an owner.
+        user = request.user if request.user.is_authenticated else None
+        result = service.compare(prompt, model_ids, user=user)
 
         return Response(result, status=status.HTTP_200_OK)
 

@@ -24,7 +24,7 @@ class ComparisonService:
         self.judge_service = judge_service
         self.provider_factory = provider_factory
 
-    def compare(self, prompt: str, model_ids: list[str]) -> dict:
+    def compare(self, prompt: str, model_ids: list[str], user=None) -> dict:
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty.")
 
@@ -45,7 +45,7 @@ class ComparisonService:
 
             models.append(model)
 
-        run, experiment_models = persistence.start_run(prompt, models)
+        run, experiment_models = persistence.start_run(prompt, models, user=user)
 
         try:
             return self._run_comparison(run, experiment_models, models, prompt)

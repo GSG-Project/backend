@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -7,6 +8,14 @@ from django.utils import timezone
 class Experiment(models.Model):
     """A comparison request: one prompt and the models chosen for it."""
 
+    # Who ran it. Empty for anonymous comparisons, which cannot be listed later.
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='experiments',
+    )
     prompt = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     ai_models = models.ManyToManyField(
@@ -17,7 +26,11 @@ class Experiment(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        indexes = [models.Index(fields=['-created_at'])]
+        indexes = [
+            models.Index(fields=['-created_at']),
+            # A user's history, newest first.
+            models.Index(fields=['user', '-created_at']),
+        ]
 
     def __str__(self):
         return f'Experiment {self.pk}'

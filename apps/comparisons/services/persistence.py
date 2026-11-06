@@ -10,10 +10,13 @@ from apps.comparisons.services.metrics_service import normalize_latency_ms, norm
 MAX_ERROR_LENGTH = 500
 
 
-def start_run(prompt: str, ai_models: list) -> tuple[Run, dict]:
-    """Create the experiment and its first run. Returns the run and a model id -> ExperimentModel map."""
+def start_run(prompt: str, ai_models: list, user=None) -> tuple[Run, dict]:
+    """Create the experiment and its first run. Returns the run and a model id -> ExperimentModel map.
+
+    user is the signed-in user, or None for an anonymous comparison.
+    """
     with transaction.atomic():
-        experiment = Experiment.objects.create(prompt=prompt)
+        experiment = Experiment.objects.create(prompt=prompt, user=user)
         experiment_models = ExperimentModel.objects.bulk_create(
             ExperimentModel(experiment=experiment, ai_model=ai_model) for ai_model in ai_models
         )
