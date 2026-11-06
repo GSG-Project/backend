@@ -1,3 +1,5 @@
+import logging
+
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -5,6 +7,8 @@ from rest_framework.response import Response
 
 from apps.comparisons.serializers import ComparisonRequestSerializer, ComparisonResponseSerializer
 from apps.comparisons.services.comparison_service import ComparisonService
+
+logger = logging.getLogger(__name__)
 
 RESULT_A = {
     "model_id": "gemini-3.8-flash",
@@ -187,4 +191,10 @@ def create_comparison(request):
         return Response(
             {"error": str(error)},
             status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception:
+        logger.exception("Comparison request failed unexpectedly.")
+        return Response(
+            {"error": "The comparison could not be completed."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
