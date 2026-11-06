@@ -27,7 +27,12 @@ PUBLIC_ENDPOINTS = [
     ('/api/auth/login/', 'post'),
     ('/api/auth/refresh/', 'post'),
 ]
-ALL_ENDPOINTS = PUBLIC_ENDPOINTS + [('/api/auth/me/', 'get')]
+SIGNED_IN_ENDPOINTS = [
+    ('/api/auth/me/', 'get'),
+    ('/api/experiments/', 'get'),
+    ('/api/experiments/{id}/', 'get'),
+]
+ALL_ENDPOINTS = PUBLIC_ENDPOINTS + SIGNED_IN_ENDPOINTS
 
 
 @pytest.mark.parametrize('path, method', ALL_ENDPOINTS)
@@ -77,11 +82,23 @@ def test_endpoints_are_documented_as_public(schema, path, method):
     assert not operation(schema, path, method).get('security')
 
 
-def test_the_current_user_endpoint_documents_the_bearer_token(schema):
-    security = operation(schema, '/api/auth/me/', 'get').get('security')
+@pytest.mark.parametrize('path, method', SIGNED_IN_ENDPOINTS)
+def test_signed_in_endpoints_document_the_bearer_token(schema, path, method):
+    security = operation(schema, path, method).get('security')
 
     assert security and any('jwtAuth' in option for option in security)
     assert 'jwtAuth' in schema['components']['securitySchemes']
+
+
+def test_the_experiment_list_documents_its_pagination(schema):
+    op = operation(schema, '/api/experiments/', 'get')
+
+    assert {'page', 'page_size'} <= {parameter['name'] for parameter in op['parameters']}
+    assert 'results' in schema['components']['schemas']['PaginatedExperimentListList']['properties']
+
+
+def test_the_experiment_detail_documents_not_found(schema):
+    assert '404' in operation(schema, '/api/experiments/{id}/', 'get')['responses']
 
 
 def test_registration_documents_its_request_and_tokens(schema):
