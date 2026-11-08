@@ -25,6 +25,11 @@ def start_run(prompt: str, ai_models: list, user=None) -> tuple[Run, dict]:
     return run, {em.ai_model.api_model_identifier: em for em in experiment_models}
 
 
+def add_run(experiment: Experiment) -> Run:
+    """Start another run of an existing experiment. Earlier runs are kept."""
+    return Run.objects.create(experiment=experiment, status=Run.Status.RUNNING)
+
+
 def save_response(run: Run, experiment_model: ExperimentModel, result: dict) -> ModelResponse:
     """Save one model's outcome. result has the shape returned by ComparisonService."""
     ai_model = experiment_model.ai_model

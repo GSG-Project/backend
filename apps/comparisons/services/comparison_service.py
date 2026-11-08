@@ -8,7 +8,7 @@ from django.db import transaction
 
 from apps.ai_models.models import AIModel
 from apps.ai_models.services.catalog import get_judge_model, get_selectable_model
-from apps.comparisons.models import Run
+from apps.comparisons.models import Experiment, Run
 from apps.comparisons.services import persistence
 from apps.evaluations.services.judge_service import JudgeService
 from apps.evaluations.services.persistence import save_scores
@@ -47,6 +47,32 @@ class ComparisonService:
 
         run, experiment_models = persistence.start_run(prompt, models, user=user)
 
+        return self._execute(run, experiment_models, models, prompt)
+
+    def rerun(self, experiment: Experiment) -> dict:
+        """Run a saved experiment again: same prompt and models, as a new run of the same experiment."""
+        # Ids grow in the order the models were selected, so results keep that order.
+        experiment_models = list(
+            experiment.experiment_models.select_related('ai_model').order_by('id')
+        )
+
+        models = []
+
+        for experiment_model in experiment_models:
+            model_id = experiment_model.ai_model.api_model_identifier
+            # A model can be deactivated after the experiment was first run.
+            if get_selectable_model(model_id) is None:
+                raise ValueError(f"Model '{model_id}' is no longer available.")
+            models.append(experiment_model.ai_model)
+
+        run = persistence.add_run(experiment)
+        experiment_models_by_id = {
+            em.ai_model.api_model_identifier: em for em in experiment_models
+        }
+
+        return self._execute(run, experiment_models_by_id, models, experiment.prompt)
+
+    def _execute(self, run: Run, experiment_models: dict, models: list[AIModel], prompt: str) -> dict:
         try:
             return self._run_comparison(run, experiment_models, models, prompt)
         except Exception:

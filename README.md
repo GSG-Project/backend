@@ -207,12 +207,14 @@ Emails are stored in lower case and are unique. Passwords are checked with Djang
 
 ### Experiment History
 
-Signed-in users can come back to their saved comparisons. Both endpoints need `Authorization: Bearer <access>`; a comparison made while signed in is saved under that user, and one made anonymously is saved but cannot be read back.
+Signed-in users can come back to their saved comparisons. Every endpoint here needs `Authorization: Bearer <access>`; a comparison made while signed in is saved under that user, and one made anonymously is saved but cannot be read back. Each returns `404` when the experiment does not exist or is not yours.
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/experiments/` | Your experiments, newest first, 20 per page (`?page=`, `?page_size=` up to 50). Each has its models, `run_count` and the `latest_run` with its winner. |
-| `GET /api/experiments/{id}/` | One experiment with every run: each model's answer, metrics and error, per-criterion `scores`, the winner and the judge's reasoning. `404` when it does not exist or is not yours. |
+| `GET /api/experiments/{id}/` | One experiment with every run: each model's answer, metrics and error, per-criterion `scores`, the winner and the judge's reasoning. |
+| `DELETE /api/experiments/{id}/` | Deletes the experiment with all its runs, answers and scores. Returns `204`. |
+| `POST /api/experiments/{id}/rerun/` | Runs the same prompt against the same models again as a **new run of the same experiment** (no new experiment; earlier runs are kept). No request body. Returns `201` with the same shape as `POST /api/comparisons/`, or `400` if one of the models has been deactivated. |
 
 The results use the same shape as a comparison response (`answer`, `metadata`, `status`, `error`), plus `scores`.
 
