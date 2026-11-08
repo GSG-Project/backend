@@ -31,6 +31,8 @@ SIGNED_IN_ENDPOINTS = [
     ('/api/auth/me/', 'get'),
     ('/api/experiments/', 'get'),
     ('/api/experiments/{id}/', 'get'),
+    ('/api/experiments/{id}/', 'delete'),
+    ('/api/experiments/{id}/rerun/', 'post'),
 ]
 ALL_ENDPOINTS = PUBLIC_ENDPOINTS + SIGNED_IN_ENDPOINTS
 
@@ -99,6 +101,16 @@ def test_the_experiment_list_documents_its_pagination(schema):
 
 def test_the_experiment_detail_documents_not_found(schema):
     assert '404' in operation(schema, '/api/experiments/{id}/', 'get')['responses']
+
+
+def test_delete_and_rerun_document_their_responses(schema):
+    delete = operation(schema, '/api/experiments/{id}/', 'delete')['responses']
+    rerun = operation(schema, '/api/experiments/{id}/rerun/', 'post')
+
+    assert {'204', '401', '404'} <= set(delete)
+    assert {'201', '400', '401', '404'} <= set(rerun['responses'])
+    assert rerun['responses']['201']['content']['application/json']['schema']
+    assert 'requestBody' not in rerun
 
 
 def test_registration_documents_its_request_and_tokens(schema):
