@@ -188,6 +188,24 @@ The local API will be available at:
 
 `manage.py` uses `config.settings.development` by default. `wsgi.py` and `asgi.py` use `config.settings.production`. To override either, set `DJANGO_SETTINGS_MODULE`.
 
+### Render deployment
+
+The repository includes [`render.yaml`](render.yaml), which installs dependencies and runs
+`migrate`, `seed_models`, and `seed_criteria` before starting Gunicorn. This keeps the
+production schema synchronized with committed migrations, including the `Experiment.user`
+field from migration `0004_experiment_user`.
+
+If the Render service was created manually rather than from the blueprint, set its Start
+Command to:
+
+```text
+python manage.py migrate --noinput && python manage.py seed_models && python manage.py seed_criteria && gunicorn config.wsgi:application
+```
+
+Set `DATABASE_URL` to the Render PostgreSQL internal URL, and configure `SECRET_KEY`,
+`CORS_ALLOWED_ORIGINS`, and the provider API keys as environment variables. Redeploy after
+saving the command so pending migrations are applied before requests are accepted.
+
 ## 7. API Overview
 
 Interactive documentation is generated from the code and served at `/api/docs/` (Swagger) and `/api/redoc/`. It shows every endpoint with its description, request and response schemas, and examples. The examples below mirror it.
