@@ -134,3 +134,14 @@ def test_changing_the_profile_and_password_document_their_requests(schema):
     assert {'old_password', 'new_password'} <= set(password_schema['properties'])
     assert '204' in password['responses'] and '400' in password['responses']
     assert 'put' not in schema['paths']['/api/auth/me/']
+
+
+def test_a_saved_runs_evaluation_is_documented_like_the_comparison_response(schema):
+    run = schema['components']['schemas']['RunDetail']['properties']
+    evaluation = schema['components']['schemas']['JudgeEvaluation']['properties']
+    live = schema['components']['schemas']['EvaluationResult']['properties']
+    judged = schema['components']['schemas']['JudgedAnswer']['properties']
+
+    assert 'evaluation' in run
+    assert set(evaluation) == set(live)
+    assert {'label', 'overall_score', 'strengths', 'weaknesses'} <= set(judged)

@@ -6,6 +6,7 @@ from rest_framework import serializers
 from apps.ai_models.serializers import AIModelSerializer
 from apps.comparisons.models import ModelResponse, Run
 from apps.comparisons.serializers import ResultErrorSerializer, ResultMetadataSerializer
+from apps.comparisons.services.history import build_evaluation
 from apps.evaluations.models import Evaluation
 
 from .models import Experiment
@@ -87,6 +88,44 @@ class RunResultSerializer(serializers.ModelSerializer):
         return {'code': ERROR_CODE, 'message': response.error_message}
 
 
+class JudgedAnswerSerializer(serializers.Serializer):
+    """The judge's evaluation of one model's answer. Same fields as the comparison response."""
+
+    model_id = serializers.CharField()
+    label = serializers.CharField(
+        allow_null=True,
+        help_text='The anonymous label (A, B, ...) the judge saw; its reasoning refers to it. '
+                  'null for runs judged before labels were saved.',
+    )
+    accuracy = serializers.IntegerField(allow_null=True)
+    relevance = serializers.IntegerField(allow_null=True)
+    clarity = serializers.IntegerField(allow_null=True)
+    completeness = serializers.IntegerField(allow_null=True)
+    overall_score = serializers.FloatField(
+        allow_null=True,
+        help_text='The judge\'s overall score. For runs judged before it was saved, the average of '
+                  'the four criterion scores.',
+    )
+    strengths = serializers.CharField(allow_null=True, help_text='null for runs judged before it was saved.')
+    weaknesses = serializers.CharField(allow_null=True, help_text='null for runs judged before it was saved.')
+
+
+class JudgeEvaluationSerializer(serializers.Serializer):
+    """The judge's evaluation of a run, in the same shape as `evaluation` in a comparison response."""
+
+    winner = serializers.CharField(allow_null=True, help_text='The label of the best answer.')
+    winner_model_id = serializers.CharField(allow_null=True)
+    reasoning = serializers.CharField()
+    evaluations = JudgedAnswerSerializer(many=True)
+    judge_model = serializers.CharField(allow_null=True)
+    latency_ms = serializers.FloatField(
+        allow_null=True, help_text="The judge's own usage is not stored: always null.",
+    )
+    input_tokens = serializers.IntegerField(allow_null=True, help_text='Always null.')
+    output_tokens = serializers.IntegerField(allow_null=True, help_text='Always null.')
+    total_tokens = serializers.IntegerField(allow_null=True, help_text='Always null.')
+
+
 class RunDetailSerializer(RunSummarySerializer):
     completed_at = serializers.DateTimeField(allow_null=True)
     evaluation_error = serializers.CharField(
@@ -94,11 +133,19 @@ class RunDetailSerializer(RunSummarySerializer):
     )
     judge_reasoning = serializers.CharField(help_text="The judge's explanation. Empty without an evaluation.")
     results = RunResultSerializer(source='responses', many=True)
+    evaluation = serializers.SerializerMethodField(
+        help_text="The judge's full evaluation, shaped like `evaluation` in a comparison response. "
+                  'null unless the evaluation completed.',
+    )
 
     class Meta(RunSummarySerializer.Meta):
         fields = RunSummarySerializer.Meta.fields + [
-            'completed_at', 'evaluation_error', 'judge_reasoning', 'results',
+            'completed_at', 'evaluation_error', 'judge_reasoning', 'results', 'evaluation',
         ]
+
+    @extend_schema_field(JudgeEvaluationSerializer(allow_null=True))
+    def get_evaluation(self, run):
+        return build_evaluation(run)
 
 
 class ExperimentDetailSerializer(serializers.ModelSerializer):
