@@ -30,11 +30,12 @@ A person with an account (`apps/accounts`). It replaces Django's default user, s
 | Field | Notes |
 |---|---|
 | `email` | Unique, stored in lower case. This is the sign-in name |
-| `name` | Display name |
+| `first_name` | Required at registration, up to 150 characters |
+| `last_name` | Optional, up to 150 characters |
 | `password` | Hashed by Django, never stored in clear text |
 | `is_active`, `is_staff`, `is_superuser`, `date_joined`, `last_login` | Standard Django account fields |
 
-There is no username. Other apps point to it with `settings.AUTH_USER_MODEL`.
+There is no username. The single `name` used earlier was split into `first_name` and `last_name` (migration `0002_split_name`: the first word became the first name, the rest the last name). Other apps point to it with `settings.AUTH_USER_MODEL`.
 
 ## `AIModel`
 

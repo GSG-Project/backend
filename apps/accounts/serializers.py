@@ -6,10 +6,13 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """The account as the client sees it. Only the names can be changed; the email cannot."""
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'name']
-        read_only_fields = fields
+        fields = ['id', 'email', 'first_name', 'last_name']
+        read_only_fields = ['id', 'email']
+        extra_kwargs = {'first_name': {'allow_blank': False}}
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -17,8 +20,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'name', 'password']
-        extra_kwargs = {'name': {'allow_blank': False}}
+        fields = ['email', 'first_name', 'last_name', 'password']
+        extra_kwargs = {'first_name': {'required': True, 'allow_blank': False}}
 
     def validate_email(self, value):
         email = value.lower()
@@ -28,7 +31,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         # Run the password rules with the user's details so "too similar to the email" is caught.
-        validate_password(attrs['password'], user=User(email=attrs['email'], name=attrs['name']))
+        user = User(
+            email=attrs['email'], first_name=attrs['first_name'], last_name=attrs.get('last_name', ''),
+        )
+        validate_password(attrs['password'], user=user)
         return attrs
 
     def create(self, validated_data):

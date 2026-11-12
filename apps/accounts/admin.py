@@ -7,14 +7,17 @@ from .models import User
 @admin.register(User)
 class AccountAdmin(UserAdmin):
     ordering = ('email',)
-    list_display = ('email', 'name', 'is_staff', 'is_active', 'date_joined')
-    search_fields = ('email', 'name')
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined')
+    search_fields = ('email', 'first_name', 'last_name')
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Profile', {'fields': ('name',)}),
+        ('Profile', {'fields': ('first_name', 'last_name')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Dates', {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
-        (None, {'classes': ('wide',), 'fields': ('email', 'name', 'password1', 'password2')}),
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'first_name', 'last_name', 'password1', 'password2'),
+        }),
     )

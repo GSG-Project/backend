@@ -109,7 +109,7 @@ python manage.py shell            # interactive console with the project loaded
 ### `apps/`: our features
 
 #### `apps/accounts/`: users and sign-in
-- Table `User`: replaces Django's default user. Sign in with **email** and password (no username); also stores a `name`. The project sets `AUTH_USER_MODEL = 'accounts.User'`, which must never change after the first migration.
+- Table `User`: replaces Django's default user. Sign in with **email** and password (no username); also stores a `first_name` and `last_name`; users can change them with `PATCH /api/auth/me/` and their password with `POST /api/auth/change-password/`. The project sets `AUTH_USER_MODEL = 'accounts.User'`, which must never change after the first migration.
 - Auth is JWT via `djangorestframework-simplejwt` (like `jsonwebtoken` in Express): `register`, `login`, `refresh`, `me`. Routes are mounted at `/api/auth/`.
 - Make a view require login with `@permission_classes([IsAuthenticated])`; then `request.user` is the signed-in user. Views without it stay public, and a valid token is still accepted.
 - Reference users with `settings.AUTH_USER_MODEL` (or `get_user_model()`), never by importing `User` directly in other apps' models.

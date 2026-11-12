@@ -29,6 +29,7 @@ PUBLIC_ENDPOINTS = [
 ]
 SIGNED_IN_ENDPOINTS = [
     ('/api/auth/me/', 'get'),
+    ('/api/auth/me/', 'patch'),
     ('/api/experiments/', 'get'),
     ('/api/experiments/{id}/', 'get'),
     ('/api/experiments/{id}/', 'delete'),
@@ -120,3 +121,11 @@ def test_registration_documents_its_request_and_tokens(schema):
     assert 'password' in schema['components']['schemas']['Register']['properties']
     response_schema = schema['components']['schemas']['RegisterResponse']
     assert {'access', 'refresh', 'user'} <= set(response_schema['properties'])
+
+
+def test_updating_the_profile_documents_its_request(schema):
+    patch = operation(schema, '/api/auth/me/', 'patch')
+
+    assert 'application/json' in patch['requestBody']['content']
+    assert 'first_name' in schema['components']['schemas']['PatchedUser']['properties']
+    assert 'put' not in schema['paths']['/api/auth/me/']
