@@ -55,3 +55,41 @@ class Evaluation(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+
+
+class ResponseEvaluation(models.Model):
+    """The judge's overall verdict on one response: its overall score and written feedback.
+
+    Evaluation holds the score per criterion; this holds what the judge said about the
+    answer as a whole. NULL means the judge's value was not saved (older runs).
+    """
+
+    response = models.OneToOneField(
+        'comparisons.ModelResponse', on_delete=models.CASCADE, related_name='summary',
+    )
+    # The anonymous label (A, B, ...) the judge saw. The judge's reasoning refers to it.
+    label = models.CharField(max_length=10, null=True, blank=True)
+    overall_score = models.DecimalField(max_digits=4, decimal_places=2)
+    strengths = models.TextField(null=True, blank=True)
+    weaknesses = models.TextField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(overall_score__gte=1) & Q(overall_score__lte=10),
+                name='overall_score_between_1_and_10',
+            ),
+        ]
+
+    def __str__(self):
+        return f'Overall {self.overall_score} for response {self.response_id}'
+
+    def clean(self):
+        # A failed response has nothing to judge. This spans two tables, so the database
+        # cannot check it; bulk operations skip it, so use save().
+        if self.response_id is not None and self.response.status == 'failed':
+            raise ValidationError('A failed response cannot be evaluated.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

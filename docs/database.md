@@ -14,7 +14,7 @@ Each app owns its tables:
 | `accounts` | `User` |
 | `ai_models` | `AIModel` |
 | `comparisons` | `Experiment`, `ExperimentModel`, `Run`, `ModelResponse` |
-| `evaluations` | `EvaluationCriterion`, `Evaluation` |
+| `evaluations` | `EvaluationCriterion`, `Evaluation`, `ResponseEvaluation` |
 
 ## Conventions
 
@@ -120,6 +120,20 @@ The judge's score for one response on one criterion.
 - A failed response cannot be scored (checked in `save()`).
 - `feedback` is optional text.
 
+## `ResponseEvaluation`
+
+The judge's verdict on one response as a whole: what it said beyond the four scores.
+
+| Field | Notes |
+|---|---|
+| `response` | One-to-one with `ModelResponse` |
+| `label` | The anonymous label (A, B, ...) the judge saw. Its reasoning refers to it |
+| `overall_score` | The judge's overall score, 1 to 10 (database check) |
+| `strengths`, `weaknesses` | The judge's written feedback |
+
+- A failed response cannot have one (checked in `save()`).
+- `NULL` in `label`, `strengths` or `weaknesses` means the value was not saved. This is the case for runs judged before this table existed (migration `0002_response_evaluation`). For those runs the migration set `overall_score` to the average of the four saved scores, which is how the judge builds its own; the judge's own number was never stored.
+
 `evaluations` refers to `comparisons.ModelResponse` by string, so the `evaluations` app does not import `comparisons`.
 
 ## How a comparison is saved
@@ -137,7 +151,8 @@ Models are called through the provider named on `AIModel.provider` (`providers/f
 
 ## Known limitations
 
-- **Part of the judge output is not stored.** The winner and its reasoning are saved on `Run`, and the per-criterion scores in `Evaluation`. The overall score (the average of the criteria), and the per-answer strengths and weaknesses, are returned by the API but not saved.
+- **The judge's own usage is not stored.** Its latency and token counts are returned when a comparison runs, but not saved, so history returns them as `null`.
+- **Runs judged before `ResponseEvaluation` existed** have no label, strengths or weaknesses, and a computed overall score (see above).
 - **No rubric or prompt history.** Editing a criterion changes what older scores mean, and the judge prompt is not stored per run. Needed for FR-20 and FR-21.
 - **No price history.** `cost` is stored on each response, but the prices used are not. Needed if prices change often (FR-22).
 - **Anonymous experiments cannot be claimed.** If someone compares without signing in and registers afterwards, those experiments stay ownerless. Claiming them is planned as a later task.
