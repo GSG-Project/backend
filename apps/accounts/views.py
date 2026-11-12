@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import (
+    ChangePasswordSerializer,
     RegisterResponseSerializer,
     RegisterSerializer,
     UserSerializer,
@@ -76,6 +77,36 @@ class MeView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+@extend_schema(
+    tags=TAG,
+    summary='Change your password',
+    description=(
+        'Checks the current password, then sets the new one, which must pass the same strength rules as '
+        'registration and differ from the old one. Returns `204`. Access tokens already issued keep '
+        'working until they expire (30 minutes); the client should sign in again to get fresh ones.'
+    ),
+    request={'application/json': ChangePasswordSerializer},
+    responses={
+        204: OpenApiResponse(description='The password was changed.'),
+        400: OpenApiResponse(description='The current password is wrong or the new one is not accepted.'),
+    },
+    examples=[
+        OpenApiExample(
+            'Change password',
+            request_only=True,
+            value={'old_password': 'a-long-passphrase-42', 'new_password': 'a-newer-passphrase-77'},
+        ),
+    ],
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(
