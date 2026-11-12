@@ -216,10 +216,12 @@ Users sign in with email and password and receive JWTs. Comparisons stay open to
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/auth/register/` | Create an account (`email`, `name`, `password`). Returns the user and the tokens. |
+| `POST /api/auth/register/` | Create an account (`email`, `first_name`, optional `last_name`, `password`). Returns the user and the tokens. |
 | `POST /api/auth/login/` | `email` + `password` → `access` (30 min) and `refresh` (7 days). |
 | `POST /api/auth/refresh/` | `refresh` → a new `access`. |
-| `GET /api/auth/me/` | The signed-in user. Needs `Authorization: Bearer <access>`. |
+| `GET /api/auth/me/` | The signed-in user (`id`, `email`, `first_name`, `last_name`). Needs `Authorization: Bearer <access>`. |
+| `PATCH /api/auth/me/` | Update the profile: send `first_name` and/or `last_name`. The email cannot be changed. |
+| `POST /api/auth/change-password/` | `old_password` + `new_password` → `204`. Tokens already issued keep working until they expire. |
 
 Emails are stored in lower case and are unique. Passwords are checked with Django's strength rules.
 

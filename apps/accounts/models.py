@@ -30,14 +30,12 @@ class User(AbstractUser):
     """A person with an account. Signs in with email and password."""
 
     username = None
-    first_name = None
-    last_name = None
 
+    # first_name and last_name come from AbstractUser (both up to 150 characters).
     email = models.EmailField(unique=True)
-    name = models.CharField(max_length=150)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['name']
+    REQUIRED_FIELDS = ['first_name']
 
     objects = UserManager()
 

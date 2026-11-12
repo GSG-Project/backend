@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 User = get_user_model()
 
 PASSWORD = 'a-long-passphrase-42'
-REGISTER = {'email': 'Sara@Example.com', 'name': 'Sara', 'password': PASSWORD}
+REGISTER = {'email': 'Sara@Example.com', 'first_name': 'Sara', 'last_name': 'Ali', 'password': PASSWORD}
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def client():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(email='sara@example.com', name='Sara', password=PASSWORD)
+    return User.objects.create_user(email='sara@example.com', first_name='Sara', password=PASSWORD)
 
 
 @pytest.mark.django_db
@@ -25,7 +25,7 @@ def test_register_creates_the_account_and_returns_tokens(client):
     assert response.status_code == 201
     body = response.json()
     assert body['user']['email'] == 'sara@example.com'  # stored in lower case
-    assert body['user']['name'] == 'Sara'
+    assert body['user']['first_name'] == 'Sara' and body['user']['last_name'] == 'Ali'
     assert body['access'] and body['refresh']
     assert 'password' not in body['user']
     created = User.objects.get(email='sara@example.com')
@@ -53,7 +53,7 @@ def test_register_rejects_a_duplicate_email_ignoring_case(client, user):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize('field', ['email', 'name', 'password'])
+@pytest.mark.parametrize('field', ['email', 'first_name', 'password'])
 def test_register_requires_every_field(client, field):
     data = {k: v for k, v in REGISTER.items() if k != field}
 

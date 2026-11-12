@@ -21,7 +21,9 @@ def catalog(settings):
 
 @pytest.fixture
 def sara():
-    return User.objects.create_user(email='sara@example.com', name='Sara', password='a-long-passphrase-42')
+    return User.objects.create_user(
+        email='sara@example.com', first_name='Sara', password='a-long-passphrase-42',
+    )
 
 
 def client_for(user=None):

@@ -29,6 +29,8 @@ PUBLIC_ENDPOINTS = [
 ]
 SIGNED_IN_ENDPOINTS = [
     ('/api/auth/me/', 'get'),
+    ('/api/auth/me/', 'patch'),
+    ('/api/auth/change-password/', 'post'),
     ('/api/experiments/', 'get'),
     ('/api/experiments/{id}/', 'get'),
     ('/api/experiments/{id}/', 'delete'),
@@ -120,3 +122,15 @@ def test_registration_documents_its_request_and_tokens(schema):
     assert 'password' in schema['components']['schemas']['Register']['properties']
     response_schema = schema['components']['schemas']['RegisterResponse']
     assert {'access', 'refresh', 'user'} <= set(response_schema['properties'])
+
+
+def test_changing_the_profile_and_password_document_their_requests(schema):
+    patch = operation(schema, '/api/auth/me/', 'patch')
+    password = operation(schema, '/api/auth/change-password/', 'post')
+
+    assert 'application/json' in patch['requestBody']['content']
+    assert 'first_name' in schema['components']['schemas']['PatchedUser']['properties']
+    password_schema = schema['components']['schemas']['ChangePassword']
+    assert {'old_password', 'new_password'} <= set(password_schema['properties'])
+    assert '204' in password['responses'] and '400' in password['responses']
+    assert 'put' not in schema['paths']['/api/auth/me/']
