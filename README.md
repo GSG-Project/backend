@@ -232,11 +232,11 @@ Signed-in users can come back to their saved comparisons. Every endpoint here ne
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/experiments/` | Your experiments, newest first, 20 per page (`?page=`, `?page_size=` up to 50). Each has its models, `run_count` and the `latest_run` with its winner. |
-| `GET /api/experiments/{id}/` | One experiment with every run: each model's answer, metrics and error, per-criterion `scores`, the winner and the judge's reasoning. |
+| `GET /api/experiments/{id}/` | One experiment with every run: each model's answer, metrics and error, per-criterion `scores`, and `evaluation` (winner, reasoning, and per answer: label, the four scores, `overall_score`, `strengths`, `weaknesses`). |
 | `DELETE /api/experiments/{id}/` | Deletes the experiment with all its runs, answers and scores. Returns `204`. |
 | `POST /api/experiments/{id}/rerun/` | Runs the same prompt against the same models again as a **new run of the same experiment** (no new experiment; earlier runs are kept). No request body. Returns `201` with the same shape as `POST /api/comparisons/`, or `400` if one of the models has been deactivated. |
 
-The results use the same shape as a comparison response (`answer`, `metadata`, `status`, `error`), plus `scores`.
+The results use the same shape as a comparison response (`answer`, `metadata`, `status`, `error`), plus `scores`. Each run's `evaluation` has the same shape as `evaluation` in a comparison response, so one frontend component can show both; the judge's own usage fields are `null`. Runs judged before the verdict was stored have `label`, `strengths` and `weaknesses` as `null`, and an `overall_score` computed from the four scores.
 
 ### List Models
 
