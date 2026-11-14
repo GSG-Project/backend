@@ -210,6 +210,12 @@ saving the command so pending migrations are applied before requests are accepte
 
 Interactive documentation is generated from the code and served at `/api/docs/` (Swagger) and `/api/redoc/`. It shows every endpoint with its description, request and response schemas, and examples. The examples below mirror it.
 
+### Health Check
+
+`GET /api/health/` (also `HEAD`) needs no token. It returns `200` with `{"status": "ok", "database": "ok"}` when the service can reach the database, and `503` with `{"status": "error", "database": "unavailable"}` when it cannot. It returns nothing private. Render uses it as the service health check (`render.yaml`).
+
+**Keeping the free Render service awake:** a free web service sleeps after about 15 minutes without traffic, and the next request waits for it to wake up. Call `https://<your-service>.onrender.com/api/health/` every 10 minutes from an external scheduler, for example cron-job.org or UptimeRobot (free, `GET` or `HEAD`, expect `200`). A GitHub Actions schedule is not recommended here: the repository is private, so a 10-minute schedule would use more than the free monthly minutes.
+
 ### Authentication
 
 Users sign in with email and password and receive JWTs. Comparisons stay open to anonymous users, so a token is optional on the other endpoints (but an invalid or expired token returns `401`, so drop it and refresh when that happens).

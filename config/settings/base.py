@@ -156,6 +156,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'TAGS': [
+        {'name': 'Health', 'description': 'Check that the service is running.'},
         {'name': 'Auth', 'description': 'Create an account, sign in and refresh tokens.'},
         {'name': 'Models', 'description': 'The AI models available for comparison.'},
         {'name': 'Experiments', 'description': 'Your saved experiments and their results.'},

@@ -21,6 +21,7 @@ def operation(schema, path, method):
 
 
 PUBLIC_ENDPOINTS = [
+    ('/api/health/', 'get'),
     ('/api/models/', 'get'),
     ('/api/comparisons/', 'post'),
     ('/api/auth/register/', 'post'),
@@ -145,3 +146,9 @@ def test_a_saved_runs_evaluation_is_documented_like_the_comparison_response(sche
     assert 'evaluation' in run
     assert set(evaluation) == set(live)
     assert {'label', 'overall_score', 'strengths', 'weaknesses'} <= set(judged)
+
+
+def test_health_documents_both_outcomes(schema):
+    responses = operation(schema, '/api/health/', 'get')['responses']
+
+    assert '200' in responses and '503' in responses

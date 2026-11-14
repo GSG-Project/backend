@@ -2,7 +2,10 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
+from config.health import health
+
 api_patterns = [
+    path('health/', health),
     path('auth/', include('apps.accounts.urls')),
     path('models/', include('apps.ai_models.urls')),
     path('comparisons/', include('apps.comparisons.urls')),

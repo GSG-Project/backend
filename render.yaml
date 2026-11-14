@@ -4,7 +4,7 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: python manage.py migrate --noinput && python manage.py seed_models && python manage.py seed_criteria && gunicorn config.wsgi:application
-    healthCheckPath: /api/models/
+    healthCheckPath: /api/health/
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
