@@ -53,7 +53,10 @@ class ResultMetadataSerializer(serializers.Serializer):
 
 
 class ResultErrorSerializer(serializers.Serializer):
-    code = serializers.CharField(help_text="For now always `provider_error`.")
+    code = serializers.CharField(
+        help_text="Why the model failed: `provider_overloaded`, `provider_rate_limited`, "
+                  "`provider_timeout` (all worth trying again) or `provider_error`.",
+    )
     message = serializers.CharField()
 
 

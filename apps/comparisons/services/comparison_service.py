@@ -12,7 +12,7 @@ from apps.comparisons.models import Experiment, Run
 from apps.comparisons.services import persistence
 from apps.evaluations.services.judge_service import JudgeService
 from apps.evaluations.services.persistence import save_scores
-from providers.exceptions import ProviderError
+from providers.exceptions import ProviderError, describe_for_user
 from providers.factory import get_provider
 
 
@@ -144,10 +144,7 @@ class ComparisonService:
                         "answer": None,
                         "metadata": None,
                         "status": "failed",
-                        "error": {
-                            "code": "provider_error",
-                            "message": "This model could not generate a response."
-                        },
+                        "error": describe_for_user(error),
                         "error_detail": self._describe_error(error),
                     }
 

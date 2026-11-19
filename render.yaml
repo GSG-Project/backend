@@ -3,7 +3,7 @@ services:
     name: llm-arena-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py migrate --noinput && python manage.py seed_models && python manage.py seed_criteria && gunicorn config.wsgi:application
+    startCommand: python manage.py migrate --noinput && python manage.py seed_models && python manage.py seed_criteria && gunicorn config.wsgi:application --timeout 120
     healthCheckPath: /api/health/
     envVars:
       - key: PYTHON_VERSION

@@ -187,6 +187,11 @@ AI_REQUEST_TIMEOUT_SECONDS = env.int(
     default=60
 )
 
+# Temporary provider failures (overloaded, rate limited) are retried this many
+# times, waiting 1s, 2s, ... (plus a little jitter) between attempts.
+AI_MAX_RETRIES = env.int('AI_MAX_RETRIES', default=2)
+AI_RETRY_BASE_DELAY_SECONDS = env.float('AI_RETRY_BASE_DELAY_SECONDS', default=1.0)
+
 
 GROQ_API_KEY = env('GROQ_API_KEY', default='')
 

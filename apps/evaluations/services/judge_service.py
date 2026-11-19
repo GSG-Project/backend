@@ -14,6 +14,9 @@ from providers.exceptions import ProviderError
 from apps.evaluations.serializers import JudgeResponseSerializer
 
 
+JUDGE_ATTEMPTS = 2
+
+
 class JudgeService:
 
     def __init__(self):
@@ -112,29 +115,23 @@ Return ONLY valid JSON with this exact structure:
 Include exactly one evaluation for every supplied label.
 The winner must be one of the supplied labels.
 Scores must be between 1 and 10.
+The four criterion scores must be whole numbers; only overall_score may have decimals.
 """
 
-        result = self.provider.generate(
-            model_id=settings.JUDGE_MODEL,
-            prompt=judge_prompt
-        )
-
-        try:
-            judge_data = json.loads(result["text"])
-        except (json.JSONDecodeError, TypeError) as error:
-            raise ProviderError(
-                "Judge returned invalid JSON."
-            ) from error
-
-        serializer = JudgeResponseSerializer(
-            data=judge_data,
-            context={"expected_labels": labels}
-        )
-
-        if not serializer.is_valid():
-            raise ProviderError(
-                f"Judge response failed validation: {serializer.errors}"
+        # A judge sometimes answers with malformed JSON or breaks the format.
+        # One more try usually fixes it and saves the comparison.
+        for attempt in range(JUDGE_ATTEMPTS):
+            result = self.provider.generate(
+                model_id=settings.JUDGE_MODEL,
+                prompt=judge_prompt
             )
+
+            try:
+                serializer = self._parse(result["text"], labels)
+                break
+            except ProviderError:
+                if attempt == JUDGE_ATTEMPTS - 1:
+                    raise
 
         validated = serializer.validated_data
 
@@ -157,3 +154,21 @@ Scores must be between 1 and 10.
             "total_tokens": result["total_tokens"],
         }
 
+    @staticmethod
+    def _parse(text, labels):
+        try:
+            judge_data = json.loads(text)
+        except (json.JSONDecodeError, TypeError) as error:
+            raise ProviderError("Judge returned invalid JSON.") from error
+
+        serializer = JudgeResponseSerializer(
+            data=judge_data,
+            context={"expected_labels": labels}
+        )
+
+        if not serializer.is_valid():
+            raise ProviderError(
+                f"Judge response failed validation: {serializer.errors}"
+            )
+
+        return serializer
