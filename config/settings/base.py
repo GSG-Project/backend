@@ -195,6 +195,8 @@ AI_RETRY_BASE_DELAY_SECONDS = env.float('AI_RETRY_BASE_DELAY_SECONDS', default=1
 
 GROQ_API_KEY = env('GROQ_API_KEY', default='')
 
+OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
+
 JUDGE_MODEL = env(
     'JUDGE_MODEL',
     default='openai/gpt-oss-120b'

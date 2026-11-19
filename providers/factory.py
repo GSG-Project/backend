@@ -16,4 +16,9 @@ def get_provider(provider_name: str) -> BaseProvider:
 
         return GroqProvider()
 
+    if provider_name == 'openrouter':
+        from providers.openrouter import OpenRouterProvider
+
+        return OpenRouterProvider()
+
     raise ProviderModelError(f"Unsupported provider '{provider_name}'.")

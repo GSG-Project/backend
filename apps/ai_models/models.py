@@ -7,6 +7,7 @@ class AIModel(models.Model):
     class Provider(models.TextChoices):
         GEMINI = 'gemini', 'Gemini'
         GROQ = 'groq', 'Groq'
+        OPENROUTER = 'openrouter', 'OpenRouter'
 
     name = models.CharField(max_length=100)
     provider = models.CharField(max_length=50, choices=Provider.choices)
