@@ -31,7 +31,7 @@ class GroqProvider(BaseProvider):
             timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
         )
 
-    def generate(self, model_id: str, prompt: str) -> dict[str, Any]:
+    def _generate_once(self, model_id: str, prompt: str) -> dict[str, Any]:
 
         if not model_id:
             raise ValueError("model_id cannot be empty.")

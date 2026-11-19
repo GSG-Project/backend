@@ -2,8 +2,10 @@
 import time
 from typing import Any
 
+import httpx
 from django.conf import settings
 from google import genai
+from google.genai import types as genai_types
 from google.genai import errors as genai_errors
 
 from providers.base import BaseProvider
@@ -26,9 +28,16 @@ class GeminiProvider(BaseProvider):
         if not api_key:
             raise ValueError("GEMINI_API_KEY is missing.")
 
-        self.client = genai.Client(api_key=api_key)
+        # The SDK takes the timeout in milliseconds. Without it a slow call
+        # waits forever and can outlive the web server's own timeout.
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options=genai_types.HttpOptions(
+                timeout=settings.AI_REQUEST_TIMEOUT_SECONDS * 1000,
+            ),
+        )
 
-    def generate(self, model_id: str, prompt: str) -> dict[str, Any]:
+    def _generate_once(self, model_id: str, prompt: str) -> dict[str, Any]:
         """Generate a response and collect performance metrics."""
 
         if not model_id:
@@ -66,7 +75,7 @@ class GeminiProvider(BaseProvider):
 
             raise ProviderError(message) from error
 
-        except TimeoutError as error:
+        except (TimeoutError, httpx.TimeoutException) as error:
             raise ProviderTimeoutError(
                 "Gemini request timed out."
             ) from error

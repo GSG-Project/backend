@@ -1,12 +1,27 @@
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
 from rest_framework import serializers  # noqa: F401
+
+
+class ScoreField(serializers.IntegerField):
+    """A 1-10 score. Judges often answer 8.5 or "8" even when asked for whole numbers,
+    so those are rounded instead of rejecting the whole evaluation."""
+
+    def to_internal_value(self, data):
+        if isinstance(data, (float, str)) and not isinstance(data, bool):
+            try:
+                data = int(Decimal(str(data).strip()).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+            except (InvalidOperation, ValueError):
+                self.fail('invalid')
+        return super().to_internal_value(data)
 
 
 class JudgeScoreSerializer(serializers.Serializer):
     label = serializers.CharField()
-    accuracy = serializers.IntegerField(min_value=1, max_value=10)
-    relevance = serializers.IntegerField(min_value=1, max_value=10)
-    clarity = serializers.IntegerField(min_value=1, max_value=10)
-    completeness = serializers.IntegerField(min_value=1, max_value=10)
+    accuracy = ScoreField(min_value=1, max_value=10)
+    relevance = ScoreField(min_value=1, max_value=10)
+    clarity = ScoreField(min_value=1, max_value=10)
+    completeness = ScoreField(min_value=1, max_value=10)
     overall_score = serializers.FloatField(min_value=1, max_value=10)
     strengths = serializers.CharField()
     weaknesses = serializers.CharField()
