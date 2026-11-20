@@ -199,6 +199,9 @@ OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
 
 NVIDIA_API_KEY = env('NVIDIA_API_KEY', default='')
 
+# Optional: OVHcloud AI Endpoints work without a key (2 requests/min per IP and model).
+OVH_AI_ENDPOINTS_API_KEY = env('OVH_AI_ENDPOINTS_API_KEY', default='')
+
 JUDGE_MODEL = env(
     'JUDGE_MODEL',
     default='openai/gpt-oss-120b'

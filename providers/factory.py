@@ -26,4 +26,9 @@ def get_provider(provider_name: str) -> BaseProvider:
 
         return NvidiaProvider()
 
+    if provider_name == 'ovhcloud':
+        from providers.ovhcloud import OvhCloudProvider
+
+        return OvhCloudProvider()
+
     raise ProviderModelError(f"Unsupported provider '{provider_name}'.")
