@@ -26,5 +26,7 @@ services:
         sync: false
       - key: NVIDIA_API_KEY
         sync: false
+      - key: OVH_AI_ENDPOINTS_API_KEY
+        sync: false
       - key: JUDGE_MODEL
         value: openai/gpt-oss-120b

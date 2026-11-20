@@ -9,6 +9,7 @@ class AIModel(models.Model):
         GROQ = 'groq', 'Groq'
         OPENROUTER = 'openrouter', 'OpenRouter'
         NVIDIA = 'nvidia', 'NVIDIA'
+        OVHCLOUD = 'ovhcloud', 'OVHcloud'
 
     name = models.CharField(max_length=100)
     provider = models.CharField(max_length=50, choices=Provider.choices)

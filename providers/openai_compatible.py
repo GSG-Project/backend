@@ -24,11 +24,12 @@ class OpenAICompatibleProvider(BaseProvider):
     name = ''  # shown in error messages, e.g. "OpenRouter"
     url = ''  # the chat completions endpoint
     api_key_setting = ''  # name of the Django setting that holds the key
+    key_required = True  # False for providers with an anonymous free tier
 
     def __init__(self):
         api_key = getattr(settings, self.api_key_setting)
 
-        if not api_key:
+        if not api_key and self.key_required:
             raise ProviderAuthenticationError(f'{self.api_key_setting} is not configured.')
 
         self.api_key = api_key
@@ -45,7 +46,7 @@ class OpenAICompatibleProvider(BaseProvider):
         try:
             response = httpx.post(
                 self.url,
-                headers={'Authorization': f'Bearer {self.api_key}'},
+                headers={'Authorization': f'Bearer {self.api_key}'} if self.api_key else {},
                 json={
                     'model': model_id,
                     'messages': [{'role': 'user', 'content': prompt}],

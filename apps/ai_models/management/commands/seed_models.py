@@ -31,6 +31,12 @@ GROQ_FREE_MODELS = [
     ('allam-2-7b', 'ALLaM 2 7B (Groq)'),
 ]
 
+# OVHcloud AI Endpoints models. The free tier needs no key (2 requests/min per IP and per
+# model), so the limit is shared by everyone using the deployed backend.
+OVHCLOUD_FREE_MODELS = [
+    ('DeepSeek-V4.1-Flash-1017', 'DeepSeek V4.1 Flash (OVHcloud)'),
+]
+
 # Models that are gone or fail almost every request. They are switched off, not
 # deleted, because past experiments refer to them.
 RETIRED_MODELS = [
@@ -69,6 +75,15 @@ class Command(BaseCommand):
                 identifier=identifier,
                 name=name,
                 provider=AIModel.Provider.GROQ,
+                is_active=True,
+                price=Decimal('0'),
+            )
+
+        for identifier, name in OVHCLOUD_FREE_MODELS:
+            self._upsert(
+                identifier=identifier,
+                name=name,
+                provider=AIModel.Provider.OVHCLOUD,
                 is_active=True,
                 price=Decimal('0'),
             )
