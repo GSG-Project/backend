@@ -8,6 +8,7 @@ class AIModel(models.Model):
         GEMINI = 'gemini', 'Gemini'
         GROQ = 'groq', 'Groq'
         OPENROUTER = 'openrouter', 'OpenRouter'
+        NVIDIA = 'nvidia', 'NVIDIA'
 
     name = models.CharField(max_length=100)
     provider = models.CharField(max_length=50, choices=Provider.choices)
