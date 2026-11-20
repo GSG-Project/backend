@@ -29,21 +29,35 @@ def test_judge_is_not_offered_for_comparison():
     assert judge.is_judge
 
 
-def test_retired_model_is_switched_off_not_deleted():
-    AIModel.objects.create(
-        name='North Mini Code', provider='openrouter',
-        api_model_identifier='cohere/north-mini-code:free', is_active=True,
-    )
+RETIRED = [
+    'cohere/north-mini-code:free',
+    'inclusionai/ling-3.2-flash:free',
+    'google/gemma-4-31b-it:free',
+]
+
+
+@pytest.mark.parametrize('identifier', RETIRED)
+def test_retired_model_is_switched_off_not_deleted(identifier):
+    AIModel.objects.create(name='Old', provider='openrouter', api_model_identifier=identifier, is_active=True)
 
     call_command('seed_models')
 
-    assert AIModel.objects.get(api_model_identifier='cohere/north-mini-code:free').is_active is False
+    assert AIModel.objects.get(api_model_identifier=identifier).is_active is False
 
 
-def test_retired_model_is_not_created_on_a_new_database():
+def test_retired_models_are_not_created_on_a_new_database():
     call_command('seed_models')
 
-    assert not AIModel.objects.filter(api_model_identifier='cohere/north-mini-code:free').exists()
+    assert not AIModel.objects.filter(api_model_identifier__in=RETIRED).exists()
+
+
+def test_working_openrouter_models_stay_active():
+    call_command('seed_models')
+
+    active = AIModel.objects.filter(provider='openrouter', is_active=True)
+    assert set(active.values_list('api_model_identifier', flat=True)) == {
+        'nvidia/nemotron-3-ultra-550b-a55b:free', 'baidu/ernie-5.5-flash-preview:free',
+    }
 
 
 def test_reseeding_keeps_admin_changes():

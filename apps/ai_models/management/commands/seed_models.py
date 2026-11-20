@@ -18,9 +18,7 @@ SUPPORTED_MODELS = [
 # maker so one outage does not remove all of them.
 OPENROUTER_FREE_MODELS = [
     ('nvidia/nemotron-3-ultra-550b-a55b:free', 'Nemotron 3 Ultra (free)'),
-    ('inclusionai/ling-3.2-flash:free', 'Ling 3.2 Flash (free)'),
     ('baidu/ernie-5.5-flash-preview:free', 'ERNIE 5.5 Flash (free)'),
-    ('google/gemma-4-31b-it:free', 'Gemma 4 31B (free)'),
 ]
 
 # Free Groq models to compare. Groq is also the judge's provider, so these share the
@@ -33,10 +31,12 @@ GROQ_FREE_MODELS = [
     ('allam-2-7b', 'ALLaM 2 7B (Groq)'),
 ]
 
-# Models that providers stopped serving. They are switched off, not deleted, because
-# past experiments refer to them.
+# Models that are gone or fail almost every request. They are switched off, not
+# deleted, because past experiments refer to them.
 RETIRED_MODELS = [
-    'cohere/north-mini-code:free',
+    'cohere/north-mini-code:free',  # no longer served by OpenRouter
+    'inclusionai/ling-3.2-flash:free',  # temporarily rate-limited upstream on every call
+    'google/gemma-4-31b-it:free',  # rate-limited upstream on every call (shared Google capacity)
 ]
 
 
