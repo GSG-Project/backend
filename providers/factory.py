@@ -21,4 +21,9 @@ def get_provider(provider_name: str) -> BaseProvider:
 
         return OpenRouterProvider()
 
+    if provider_name == 'nvidia':
+        from providers.nvidia import NvidiaProvider
+
+        return NvidiaProvider()
+
     raise ProviderModelError(f"Unsupported provider '{provider_name}'.")

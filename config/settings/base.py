@@ -197,6 +197,8 @@ GROQ_API_KEY = env('GROQ_API_KEY', default='')
 
 OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
 
+NVIDIA_API_KEY = env('NVIDIA_API_KEY', default='')
+
 JUDGE_MODEL = env(
     'JUDGE_MODEL',
     default='openai/gpt-oss-120b'
