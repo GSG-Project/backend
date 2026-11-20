@@ -27,11 +27,18 @@ PUBLIC_ENDPOINTS = [
     ('/api/auth/register/', 'post'),
     ('/api/auth/login/', 'post'),
     ('/api/auth/refresh/', 'post'),
+    ('/api/auth/login/verify/', 'post'),
+    ('/api/auth/login/resend/', 'post'),
+    ('/api/auth/password-reset/', 'post'),
+    ('/api/auth/password-reset/confirm/', 'post'),
 ]
 SIGNED_IN_ENDPOINTS = [
     ('/api/auth/me/', 'get'),
     ('/api/auth/me/', 'patch'),
     ('/api/auth/change-password/', 'post'),
+    ('/api/auth/two-factor/enable/', 'post'),
+    ('/api/auth/two-factor/confirm/', 'post'),
+    ('/api/auth/two-factor/disable/', 'post'),
     ('/api/experiments/', 'get'),
     ('/api/experiments/{id}/', 'get'),
     ('/api/experiments/{id}/', 'delete'),

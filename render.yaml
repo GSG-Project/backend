@@ -28,5 +28,11 @@ services:
         sync: false
       - key: OVH_AI_ENDPOINTS_API_KEY
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: FRONTEND_URL
+        value: https://frontend-lqm1.onrender.com
       - key: JUDGE_MODEL
         value: openai/gpt-oss-120b

@@ -12,3 +12,4 @@ DATABASES = {
 # Tests use fake providers; blank keys make sure nothing can reach a real API.
 GEMINI_API_KEY = ''
 GROQ_API_KEY = ''
+BREVO_API_KEY = ''

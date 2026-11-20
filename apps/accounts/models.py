@@ -33,6 +33,8 @@ class User(AbstractUser):
 
     # first_name and last_name come from AbstractUser (both up to 150 characters).
     email = models.EmailField(unique=True)
+    # When on, signing in also needs a code that is emailed to the user.
+    two_factor_enabled = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name']
@@ -41,3 +43,26 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class EmailCode(models.Model):
+    """A short-lived six digit code sent by email. Only a hash of the code is stored."""
+
+    class Purpose(models.TextChoices):
+        LOGIN = 'login', 'Sign-in'
+        ENABLE_2FA = 'enable_2fa', 'Turn on two-step verification'
+
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='email_codes')
+    purpose = models.CharField(max_length=20, choices=Purpose.choices)
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    # Wrong guesses so far. The code stops working after a few.
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['user', 'purpose', '-created_at'])]
+
+    def __str__(self):
+        return f'{self.purpose} code for {self.user_id}'

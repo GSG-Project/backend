@@ -23,7 +23,8 @@ def client_for(user=None):
 def test_me_returns_both_names(sara):
     body = client_for(sara).get(URL).json()
 
-    assert body == {'id': sara.pk, 'email': 'sara@example.com', 'first_name': 'Sara', 'last_name': 'Ali'}
+    assert body == {'id': sara.pk, 'email': 'sara@example.com', 'first_name': 'Sara', 'last_name': 'Ali',
+                    'two_factor_enabled': False}
 
 
 def test_patch_changes_the_names_and_saves_them(sara):

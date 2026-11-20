@@ -117,6 +117,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
 
+# Email (password reset and sign-in codes). Brevo's HTTPS API is used because free Render
+# services block outbound SMTP. Without a key, development prints the emails to the console.
+BREVO_API_KEY = env('BREVO_API_KEY', default='')
+DEFAULT_FROM_EMAIL = env('EMAIL_FROM', default='ModelJudge <no-reply@example.com>')
+EMAIL_BACKEND = env(
+    'EMAIL_BACKEND',
+    default=(
+        'apps.accounts.email_backends.BrevoEmailBackend' if BREVO_API_KEY
+        else 'django.core.mail.backends.console.EmailBackend'
+    ),
+)
+# Where the frontend is served; reset links point to it.
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173').rstrip('/')
+PASSWORD_RESET_TIMEOUT = 60 * 60  # seconds a reset link stays valid
+
 REST_FRAMEWORK = {
     # Sending a token is optional: the comparison endpoints stay open to anonymous users.
     'DEFAULT_AUTHENTICATION_CLASSES': [
