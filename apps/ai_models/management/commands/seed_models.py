@@ -42,6 +42,9 @@ OVHCLOUD_FREE_MODELS = [
 NVIDIA_FREE_MODELS = [
     ('nvidia/nemotron-3-ultra-550b-a55b', 'Nemotron 3 Ultra (NVIDIA)'),
     ('minimaxai/minimax-m3.1-flash', 'MiniMax M3.1 Flash (NVIDIA)'),
+    ('poolside/laguna-xs-2.1', 'Laguna XS 2.1 (NVIDIA)'),
+    ('nvidia/nemotron-3.5-lightning-30b-a3b', 'Nemotron 3.5 Lightning (NVIDIA)'),
+    ('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'Nemotron 3 Nano Omni (NVIDIA)'),
 ]
 
 # Models that are gone or fail almost every request. They are switched off, not
