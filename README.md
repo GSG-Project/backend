@@ -168,6 +168,9 @@ Edit `.env`. **Never commit `.env` or real API keys**; both `.env` and `.venv/` 
 | `CORS_ALLOWED_ORIGINS` | Frontend origins allowed to call the API. |
 | `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NVIDIA_API_KEY` | Provider keys. A missing key only makes that provider's models fail. |
 | `OVH_AI_ENDPOINTS_API_KEY` | Optional; raises the OVHcloud rate limit. |
+| `BREVO_API_KEY` | Brevo key used to email password reset links and sign-in codes (HTTPS API, because free Render blocks SMTP). Without it, development prints emails to the console and production sends none. |
+| `EMAIL_FROM` | Verified sender, for example `ModelJudge <you@example.com>`. |
+| `FRONTEND_URL` | Frontend address used in reset links. |
 | `JUDGE_MODEL` | The judge's model id on Groq (default `openai/gpt-oss-120b`). |
 | `AI_REQUEST_TIMEOUT_SECONDS` | Timeout per provider request (default 60). |
 | `AI_MAX_RETRIES`, `AI_RETRY_BASE_DELAY_SECONDS` | Retries for overloaded or rate-limited answers (default 2 and 1). |
