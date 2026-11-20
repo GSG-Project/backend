@@ -20,15 +20,30 @@ OPENROUTER_FREE_MODELS = [
     ('nvidia/nemotron-3-ultra-550b-a55b:free', 'Nemotron 3 Ultra (free)'),
     ('inclusionai/ling-3.2-flash:free', 'Ling 3.2 Flash (free)'),
     ('baidu/ernie-5.5-flash-preview:free', 'ERNIE 5.5 Flash (free)'),
-    ('cohere/north-mini-code:free', 'North Mini Code (free)'),
     ('google/gemma-4-31b-it:free', 'Gemma 4 31B (free)'),
+]
+
+# Free Groq models to compare. Groq is also the judge's provider, so these share the
+# account's quota with the judge. The judge model itself is never offered here.
+# allam-2-7b is a small Arabic-focused model (4,096 token context), included to test
+# Arabic prompts.
+GROQ_FREE_MODELS = [
+    ('qwen/qwen3.8-27b', 'Qwen 3.8 27B (Groq)'),
+    ('openai/gpt-oss-20b', 'GPT-OSS 20B (Groq)'),
+    ('allam-2-7b', 'ALLaM 2 7B (Groq)'),
+]
+
+# Models that providers stopped serving. They are switched off, not deleted, because
+# past experiments refer to them.
+RETIRED_MODELS = [
+    'cohere/north-mini-code:free',
 ]
 
 
 class Command(BaseCommand):
     help = (
-        'Create the supported AI models that are missing. '
-        'Existing rows (names, prices, active flag) are left untouched.'
+        'Create the supported AI models that are missing and switch off retired ones. '
+        'Other existing rows (names, prices, active flag) are left untouched.'
     )
 
     def handle(self, *args, **options):
@@ -48,6 +63,22 @@ class Command(BaseCommand):
                 is_active=True,
                 price=Decimal('0'),
             )
+
+        for identifier, name in GROQ_FREE_MODELS:
+            self._upsert(
+                identifier=identifier,
+                name=name,
+                provider=AIModel.Provider.GROQ,
+                is_active=True,
+                price=Decimal('0'),
+            )
+
+        for identifier in RETIRED_MODELS:
+            retired = AIModel.objects.filter(
+                api_model_identifier=identifier, is_active=True,
+            ).update(is_active=False)
+            if retired:
+                self.stdout.write(f'Deactivated retired model {identifier}')
 
         self._upsert(
             identifier=settings.JUDGE_MODEL,

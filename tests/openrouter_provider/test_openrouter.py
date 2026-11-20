@@ -120,6 +120,6 @@ def test_seed_creates_free_models_with_zero_price():
     call_command('seed_models')
 
     free = AIModel.objects.filter(provider='openrouter')
-    assert free.count() == 5
+    assert free.count() == 4
     assert all(m.input_price_per_million == 0 and m.output_price_per_million == 0 for m in free)
     assert all(m.is_active and not m.is_judge for m in free)
