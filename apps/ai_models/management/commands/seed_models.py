@@ -37,6 +37,13 @@ OVHCLOUD_FREE_MODELS = [
     ('DeepSeek-V4.1-Flash-1017', 'DeepSeek V4.1 Flash (OVHcloud)'),
 ]
 
+# NVIDIA NIM models (needs NVIDIA_API_KEY). Each one was called with a real key before being
+# listed; NVIDIA retires models without notice (Llama 3.3 70B ended 2026-08-26), so re-check them.
+NVIDIA_FREE_MODELS = [
+    ('nvidia/nemotron-3-ultra-550b-a55b', 'Nemotron 3 Ultra (NVIDIA)'),
+    ('minimaxai/minimax-m3.1-flash', 'MiniMax M3.1 Flash (NVIDIA)'),
+]
+
 # Models that are gone or fail almost every request. They are switched off, not
 # deleted, because past experiments refer to them.
 RETIRED_MODELS = [
@@ -75,6 +82,15 @@ class Command(BaseCommand):
                 identifier=identifier,
                 name=name,
                 provider=AIModel.Provider.GROQ,
+                is_active=True,
+                price=Decimal('0'),
+            )
+
+        for identifier, name in NVIDIA_FREE_MODELS:
+            self._upsert(
+                identifier=identifier,
+                name=name,
+                provider=AIModel.Provider.NVIDIA,
                 is_active=True,
                 price=Decimal('0'),
             )
