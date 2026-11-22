@@ -26,6 +26,11 @@ def get_provider(provider_name: str) -> BaseProvider:
 
         return NvidiaProvider()
 
+    if provider_name == 'together':
+        from providers.together import TogetherProvider
+
+        return TogetherProvider()
+
     if provider_name == 'ovhcloud':
         from providers.ovhcloud import OvhCloudProvider
 

@@ -10,6 +10,7 @@ class AIModel(models.Model):
         OPENROUTER = 'openrouter', 'OpenRouter'
         NVIDIA = 'nvidia', 'NVIDIA'
         OVHCLOUD = 'ovhcloud', 'OVHcloud'
+        TOGETHER = 'together', 'Together AI'
 
     name = models.CharField(max_length=100)
     provider = models.CharField(max_length=50, choices=Provider.choices)

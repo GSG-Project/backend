@@ -28,6 +28,8 @@ services:
         sync: false
       - key: OVH_AI_ENDPOINTS_API_KEY
         sync: false
+      - key: TOGETHER_API_KEY
+        sync: false
       - key: BREVO_API_KEY
         sync: false
       - key: EMAIL_FROM

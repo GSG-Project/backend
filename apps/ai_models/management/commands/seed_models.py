@@ -47,6 +47,18 @@ NVIDIA_FREE_MODELS = [
     ('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'Nemotron 3 Nano Omni (NVIDIA)'),
 ]
 
+# Together AI models (needs TOGETHER_API_KEY). Pay per token, so prices are real (USD per million
+# tokens, input and output). Each one answered a real request with our key before being listed;
+# models that only stream, need a dedicated endpoint or have no capacity were left out.
+TOGETHER_MODELS = [
+    ('moonshotai/Kimi-K3.1-Pro', 'Kimi K3.1 Pro (Together)', Decimal('2'), Decimal('10')),
+    ('deepseek-ai/DeepSeek-V4-Pro-0813', 'DeepSeek V4 Pro (Together)', Decimal('1.32'), Decimal('3.96')),
+    ('zai-org/GLM-5.3', 'GLM 5.3 (Together)', Decimal('1.4'), Decimal('4.4')),
+    ('zai-org/GLM-5.3-Flash', 'GLM 5.3 Flash (Together)', Decimal('0.15'), Decimal('0.5')),
+    ('deepseek-ai/DeepSeek-V4.1-Flash', 'DeepSeek V4.1 Flash (Together)', Decimal('0.3'), Decimal('1.2')),
+    ('MiniMaxAI/MiniMax-M3.1-Flash', 'MiniMax M3.1 Flash (Together)', Decimal('0.15'), Decimal('0.6')),
+]
+
 # Models that are gone or fail almost every request. They are switched off, not
 # deleted, because past experiments refer to them.
 RETIRED_MODELS = [
@@ -98,6 +110,16 @@ class Command(BaseCommand):
                 price=Decimal('0'),
             )
 
+        for identifier, name, input_price, output_price in TOGETHER_MODELS:
+            self._upsert(
+                identifier=identifier,
+                name=name,
+                provider=AIModel.Provider.TOGETHER,
+                is_active=True,
+                price=input_price,
+                output_price=output_price,
+            )
+
         for identifier, name in OVHCLOUD_FREE_MODELS:
             self._upsert(
                 identifier=identifier,
@@ -122,7 +144,7 @@ class Command(BaseCommand):
             is_judge=True,
         )
 
-    def _upsert(self, identifier, name, provider, is_active, is_judge=False, price=None):
+    def _upsert(self, identifier, name, provider, is_active, is_judge=False, price=None, output_price=None):
         # Values are only used when the row is created, so re-running the seed
         # never undoes changes made in the admin.
         _, created = AIModel.objects.update_or_create(
@@ -134,7 +156,7 @@ class Command(BaseCommand):
                 'is_active': is_active,
                 'is_judge': is_judge,
                 'input_price_per_million': price,
-                'output_price_per_million': price,
+                'output_price_per_million': price if output_price is None else output_price,
             },
         )
         self.stdout.write(f"{'Created' if created else 'Kept existing'} {identifier}")

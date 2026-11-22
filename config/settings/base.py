@@ -213,6 +213,7 @@ GROQ_API_KEY = env('GROQ_API_KEY', default='')
 OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
 
 NVIDIA_API_KEY = env('NVIDIA_API_KEY', default='')
+TOGETHER_API_KEY = env('TOGETHER_API_KEY', default='')
 
 # Optional: OVHcloud AI Endpoints work without a key (2 requests/min per IP and model).
 OVH_AI_ENDPOINTS_API_KEY = env('OVH_AI_ENDPOINTS_API_KEY', default='')

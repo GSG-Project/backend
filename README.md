@@ -25,7 +25,7 @@ It is a Django REST API backed by PostgreSQL, deployed on Render. The React fron
 | django-cors-headers | CORS for the frontend |
 | PostgreSQL (psycopg 3) | Database |
 | google-genai, groq | SDKs for the Gemini and Groq providers |
-| httpx | HTTP client for the OpenAI-compatible providers (OpenRouter, NVIDIA, OVHcloud) |
+| httpx | HTTP client for the OpenAI-compatible providers (OpenRouter, NVIDIA, OVHcloud, Together) |
 | gunicorn | Production server on Render |
 | pytest + pytest-django, ruff | Tests and linting |
 
@@ -38,10 +38,11 @@ Every provider implements the same interface (`providers/base.py`). Which one a 
 | `gemini` | `GeminiProvider` (google-genai) | `GEMINI_API_KEY` | Preview models often answer "high demand" (503). |
 | `groq` | `GroqProvider` (groq SDK) | `GROQ_API_KEY` | Also runs the judge, so compared Groq models share its quota. |
 | `openrouter` | `OpenRouterProvider` | `OPENROUTER_API_KEY` | Free `:free` models. Free limits are account wide (20 requests/min, 50/day). |
-| `nvidia` | `NvidiaProvider` | `NVIDIA_API_KEY` | Code only for now: no models are seeded until a key is available. |
+| `nvidia` | `NvidiaProvider` | `NVIDIA_API_KEY` | Free NIM endpoints; NVIDIA retires models without notice, so re-test them. |
+| `together` | `TogetherProvider` | `TOGETHER_API_KEY` | Pay per token (no free tier, no rate limit at normal use). Prices are stored, so costs are real. Only models on Together's serverless API work; streaming-only models fail because the client does not stream. |
 | `ovhcloud` | `OvhCloudProvider` | `OVH_AI_ENDPOINTS_API_KEY` (optional) | Works without a key: 2 requests/min per IP and per model, shared by everyone using the deployed backend. |
 
-OpenRouter, NVIDIA and OVHcloud share `providers/openai_compatible.py` (the OpenAI chat completions protocol over HTTP); a provider there only sets its name, endpoint and key setting.
+OpenRouter, NVIDIA, OVHcloud and Together share `providers/openai_compatible.py` (the OpenAI chat completions protocol over HTTP); a provider there only sets its name, endpoint and key setting.
 
 **Resilience (in `providers/base.py`).** Overloaded (5xx) and rate-limited (429) answers are retried up to `AI_MAX_RETRIES` times (default 2) with growing delays; timeouts, authentication and model errors are not retried. Every request has a timeout (`AI_REQUEST_TIMEOUT_SECONDS`, default 60).
 
@@ -78,8 +79,8 @@ backend/
 │       └── services/           # judge_service, persistence
 ├── providers/                  # One module per AI provider (+ shared base, retries, errors)
 │   ├── base.py                 # Interface and retry logic
-│   ├── openai_compatible.py    # Shared code for OpenRouter, NVIDIA, OVHcloud
-│   ├── gemini.py, groq.py, openrouter.py, nvidia.py, ovhcloud.py
+│   ├── openai_compatible.py    # Shared code for OpenRouter, NVIDIA, OVHcloud, Together
+│   ├── gemini.py, groq.py, openrouter.py, nvidia.py, ovhcloud.py, together.py
 │   ├── exceptions.py           # Provider errors and the user-facing error codes
 │   └── factory.py              # Chooses the provider for a model
 ├── tests/                      # Tests grouped by feature: tests/<feature>/test_*.py
@@ -166,7 +167,7 @@ Edit `.env`. **Never commit `.env` or real API keys**; both `.env` and `.venv/` 
 | `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` | Django basics. |
 | `DATABASE_URL` | For example `postgres://user:password@localhost:5432/llm_sandbox`. |
 | `CORS_ALLOWED_ORIGINS` | Frontend origins allowed to call the API. |
-| `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NVIDIA_API_KEY` | Provider keys. A missing key only makes that provider's models fail. |
+| `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NVIDIA_API_KEY`, `TOGETHER_API_KEY` | Provider keys. A missing key only makes that provider's models fail. |
 | `OVH_AI_ENDPOINTS_API_KEY` | Optional; raises the OVHcloud rate limit. |
 | `BREVO_API_KEY` | Brevo key used to email password reset links and sign-in codes (HTTPS API, because free Render blocks SMTP). Without it, development prints emails to the console and production sends none. |
 | `EMAIL_FROM` | Verified sender, for example `ModelJudge <you@example.com>`. |
@@ -201,7 +202,7 @@ python manage.py migrate --noinput && python manage.py seed_models && python man
 
 So every deploy applies pending migrations and creates missing models before accepting requests. The 120-second Gunicorn timeout leaves room for slow providers and retries (Gunicorn's default of 30 seconds would kill them). The health check path is `/api/health/`.
 
-Set these environment variables on the service: `DATABASE_URL` (the Render PostgreSQL internal URL), `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, and the provider keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, optionally `NVIDIA_API_KEY` and `OVH_AI_ENDPOINTS_API_KEY`). Redeploy after changing them. If the service was created manually instead of from the blueprint, set its Start Command to the line above.
+Set these environment variables on the service: `DATABASE_URL` (the Render PostgreSQL internal URL), `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, and the provider keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, optionally `NVIDIA_API_KEY`, `TOGETHER_API_KEY` and `OVH_AI_ENDPOINTS_API_KEY`). Redeploy after changing them. If the service was created manually instead of from the blueprint, set its Start Command to the line above.
 
 ## 8. API Overview
 
@@ -366,7 +367,7 @@ Add its identifier to `RETIRED_MODELS` in `seed_models.py`. The next deploy swit
 - A fallback judge, and judge selection.
 - Claiming anonymous experiments after sign-in; comparing runs of the same experiment.
 - Pricing management in the API, and more than two models per comparison.
-- More providers and models once their free tiers are verified (NVIDIA NIM is wired in but waiting for a key).
+- More providers and models once their free tiers are verified (NVIDIA and Together AI are wired in and seeded).
 - More detailed analytics, configurable evaluation criteria, and comparison by quality, speed and cost.
 
 ## 14. Project Status
