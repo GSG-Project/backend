@@ -4,6 +4,121 @@ The backend of **ModelJudge**, a tool for comparing AI language models. A user s
 
 It is a Django REST API backed by PostgreSQL, deployed on Render. The React frontend lives in the `frontend` repository and only talks to this API.
 
+## Provider Architecture at a Glance
+
+The backend talks to six AI vendors, and each has its own API, response format and error codes. To keep that mess out of the comparison logic, **every vendor sits behind one small interface**. The rest of the system calls `generate(model_id, prompt)` and always gets the same answer shape back.
+
+### Where the provider layer sits
+
+```mermaid
+flowchart LR
+    UI["React frontend"] -->|"POST /api/comparisons/"| V["DRF view<br/>validates the request"]
+    V --> CS["ComparisonService<br/>business logic"]
+    CS -->|"one thread per model"| F["get_provider(name)<br/>factory"]
+    F --> P["Provider layer<br/>one interface, many vendors"]
+    P --> G["Gemini"]
+    P --> Q["Groq"]
+    P --> OR["OpenRouter"]
+    P --> NV["NVIDIA"]
+    P --> OV["OVHcloud"]
+    P --> TG["Together AI"]
+    CS --> J["JudgeService<br/>scores the answers"]
+    J --> Q
+    CS --> DB[("PostgreSQL<br/>experiments, runs, responses, scores")]
+```
+
+The view only validates. `ComparisonService` decides what happens. Only the provider layer knows anything about a vendor.
+
+### How the providers are built (class design)
+
+```mermaid
+classDiagram
+    class BaseProvider {
+        <<abstract>>
+        +generate(model_id, prompt) dict
+        #_generate_once(model_id, prompt)* dict
+    }
+    class OpenAICompatibleProvider {
+        name
+        url
+        api_key_setting
+        #_generate_once() dict
+        -_error_for(code, message)
+    }
+    class GeminiProvider
+    class GroqProvider
+    class OpenRouterProvider
+    class NvidiaProvider
+    class OvhCloudProvider
+    class TogetherProvider
+
+    BaseProvider <|-- GeminiProvider : uses the Google SDK
+    BaseProvider <|-- GroqProvider : uses the Groq SDK
+    BaseProvider <|-- OpenAICompatibleProvider : plain HTTP
+    OpenAICompatibleProvider <|-- OpenRouterProvider
+    OpenAICompatibleProvider <|-- NvidiaProvider
+    OpenAICompatibleProvider <|-- OvhCloudProvider
+    OpenAICompatibleProvider <|-- TogetherProvider
+```
+
+- **`BaseProvider`** owns the retry logic in `generate()` and declares one abstract method, `_generate_once()`. Every provider inherits the retry for free. This is the Template Method pattern.
+- **`OpenAICompatibleProvider`** holds the HTTP call, the error mapping and the response parsing for every vendor that speaks the OpenAI chat protocol. A concrete provider only sets `name`, `url` and `api_key_setting`.
+- **Gemini and Groq** have their own SDKs, so they implement `_generate_once()` themselves.
+
+### What happens when one model is asked a question
+
+```mermaid
+sequenceDiagram
+    participant S as ComparisonService
+    participant F as factory
+    participant B as BaseProvider.generate
+    participant V as Vendor API
+
+    S->>F: get_provider("together")
+    F-->>S: TogetherProvider
+    S->>B: generate(model_id, prompt)
+    loop up to AI_MAX_RETRIES + 1 attempts
+        B->>V: _generate_once()
+        alt success
+            V-->>B: answer, token counts
+            B-->>S: text, latency_ms, input/output/total tokens
+        else overloaded (5xx) or rate limited (429)
+            V-->>B: error
+            B->>B: wait base x 2^attempt + jitter, then retry
+        else timeout, bad key or unknown model
+            V-->>B: error
+            B-->>S: raise at once, no retry
+        end
+    end
+```
+
+### The design rules, in plain words
+
+| Rule | How it shows up in the code |
+|---|---|
+| **One interface** | Every provider returns the same dict: `text`, `latency_ms`, `input_tokens`, `output_tokens`, `total_tokens`. |
+| **Write shared code once** | Retry lives in `BaseProvider`. HTTP, error mapping and parsing live in `OpenAICompatibleProvider`. |
+| **Adding a vendor is cheap** | Together AI was a five-line subclass, one factory branch, one migration and seed data. No comparison code changed. |
+| **Our own error types** | Vendor failures become `ProviderRateLimitError`, `ProviderUnavailableError`, `ProviderTimeoutError`, `ProviderAuthenticationError` or `ProviderModelError`. The API turns them into safe user messages, and the raw vendor text stays in the stored detail. |
+| **Retry only what can recover** | Overloaded and rate-limited answers are retried with exponential backoff and jitter. Timeouts, bad keys and unknown models fail at once. |
+| **A failure stays local** | If one model fails, its entry is marked `failed` and the others still return. The judge runs only when two answers succeeded. |
+| **Models are data, not code** | The `AIModel` table stores the provider, vendor model id, prices and `is_active`. A model can be switched off without a deploy, and `seed_models` never overwrites admin edits. |
+| **Unknown is `null`, never `0`** | If a provider reports no tokens or a model has no price, the cost is `null`, because `0` would look like a real result. |
+| **Easy to test** | `ComparisonService` receives its provider factory and judge from outside, so tests use fakes and never call a real AI API. |
+
+### Add a new provider
+
+1. If the vendor speaks the OpenAI chat protocol, add a subclass in `providers/` that sets `name`, `url` and `api_key_setting`. Otherwise, extend `BaseProvider` and implement `_generate_once()`.
+2. Add a branch in `providers/factory.py` and a choice in `AIModel.Provider` (with a migration).
+3. Add the key to `config/settings/base.py`, `.env.example` and `render.yaml`.
+4. Add the models to `seed_models.py` with their prices, then test them against the real API before deploying.
+
+### Known weak spots
+
+- The factory is an `if` chain, so each provider needs an edit there. A registry dict would remove that.
+- `JudgeService` creates `GroqProvider` directly instead of receiving a provider, so the judge is tied to one vendor.
+- Comparisons run synchronously inside the request, so a slow model with retries makes the whole request slow. A task queue is the proper fix.
+
 ## 1. What It Does
 
 - Sends the same prompt to two chosen models **concurrently** and keeps each answer, its latency, its token counts and its estimated cost.
