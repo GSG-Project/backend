@@ -3,16 +3,16 @@ import time
 from typing import Any
 
 from django.conf import settings
-from groq import Groq, APIError, AuthenticationError, RateLimitError
+from groq import APIError, AuthenticationError, Groq, RateLimitError
 
 from providers.base import BaseProvider
 from providers.exceptions import (
-    ProviderError,
     ProviderAuthenticationError,
+    ProviderError,
+    ProviderModelError,
     ProviderRateLimitError,
     ProviderTimeoutError,
     ProviderUnavailableError,
-    ProviderModelError,
 )
 
 

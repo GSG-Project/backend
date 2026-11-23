@@ -5,17 +5,17 @@ from typing import Any
 import httpx
 from django.conf import settings
 from google import genai
-from google.genai import types as genai_types
 from google.genai import errors as genai_errors
+from google.genai import types as genai_types
 
 from providers.base import BaseProvider
 from providers.exceptions import (
-    ProviderError,
     ProviderAuthenticationError,
+    ProviderError,
+    ProviderModelError,
     ProviderRateLimitError,
     ProviderTimeoutError,
     ProviderUnavailableError,
-    ProviderModelError,
 )
 
 

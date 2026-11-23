@@ -9,10 +9,9 @@ import json
 
 from django.conf import settings
 
-from providers.groq import GroqProvider
-from providers.exceptions import ProviderError
 from apps.evaluations.serializers import JudgeResponseSerializer
-
+from providers.exceptions import ProviderError
+from providers.groq import GroqProvider
 
 JUDGE_ATTEMPTS = 2
 

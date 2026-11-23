@@ -1,6 +1,7 @@
 """Manual check against the real Groq API. Run from backend/: python -m scripts.try_groq"""
 
 import os
+
 import django
 
 os.environ.setdefault(

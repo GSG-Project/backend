@@ -1,5 +1,6 @@
 """Manual check against the real Gemini API. Run from backend/: python -m scripts.try_gemini"""
 import os
+
 import django
 
 os.environ.setdefault(
